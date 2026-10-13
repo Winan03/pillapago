@@ -1,0 +1,47 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pillapago-postgres
+    environment:
+      - POSTGRES_DB=pillapago
+      - POSTGRES_USER=${POSTGRES_USER:-pillapago_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-pillapago_pass}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER:-pillapago_user}", "-d", "pillapago"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      default:
+        ipv4_address: 127.0.0.1
+
+  redis:
+    image: redis:7-alpine
+    container_name: pillapago-redis
+    command: ["--save", "", "--append-only", "no"]
+    environment:
+      - REDIS_URL=redis://${REDIS_USER:-redis_user}:${REDIS_PASSWORD:-redis_pass}@127.0.0.1:6379
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      default:
+        ipv4_address: 127.0.0.1
+
+volumes:
+  pg_data:
+
+networks:
+  default:
+    ipam:
+      driver: default
+      config:
+        - subnet: 127.0.0.1/24
