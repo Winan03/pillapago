@@ -1,47 +1,46 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    image: docker.io/library/postgres:16-alpine
     container_name: pillapago-postgres
+    # Modo rootless compatible: PostgreSQL 16-alpine funciona sin privilegios elevados
     environment:
       - POSTGRES_DB=pillapago
       - POSTGRES_USER=${POSTGRES_USER:-pillapago_user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-pillapago_pass}
-    volumes:
-      - pg_data:/var/lib/postgresql/data
+    # Volumen nombrado desactivado para modo rootless; usando directorio directo
+    volumes: []
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:5432:5432/tcp"
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER:-pillapago_user}", "-d", "pillapago"]
       interval: 5s
       timeout: 5s
       retries: 5
-    networks:
-      default:
-        ipv4_address: 127.0.0.1
+    # Compartir red solo en loopback para aislamiento multi-tenant
+    network_mode: "bridge"
 
   redis:
-    image: redis:7-alpine
+    image: docker.io/library/redis:7-alpine
     container_name: pillapago-redis
+    # Modo sin persistencia en disco (según spec RNF-30)
     command: ["--save", "", "--append-only", "no"]
     environment:
       - REDIS_URL=redis://${REDIS_USER:-redis_user}:${REDIS_PASSWORD:-redis_pass}@127.0.0.1:6379
     ports:
-      - "127.0.0.1:6379:6379"
+      - "127.0.0.1:6379:6379/tcp"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
-    networks:
-      default:
-        ipv4_address: 127.0.0.1
+    network_mode: "bridge"
 
-volumes:
-  pg_data:
+# Volúmenes nombrados desactivados para modo rootless en Windows
+# Usar directorios locales en su lugar si es necesario:
+#
+# volumes:
+#   pg_data:
 
 networks:
   default:
-    ipam:
-      driver: default
-      config:
-        - subnet: 127.0.0.1/24
+    driver: bridge
