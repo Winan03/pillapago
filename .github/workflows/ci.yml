@@ -1,0 +1,58 @@
+name: CI Pillapago
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-verify:
+    name: Build & Verify
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: pillapago
+          POSTGRES_USER: pillapago_user
+          POSTGRES_PASSWORD: pillapago_pass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pillapago_user -d pillapago"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Validate Maven and Java configuration
+        run: mvn --version
+
+      - name: Compile and Verify project
+        run: mvn clean verify -B

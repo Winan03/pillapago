@@ -1,0 +1,53 @@
+server:
+  port: ${APP_PORT:8080}
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: pillapago-api
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:127.0.0.1}:${POSTGRES_PORT:5433}/pillapago
+    username: ${POSTGRES_USER:pillapago_user}
+    password: ${POSTGRES_PASSWORD:pillapago_pass}
+    hikari:
+      maximum-pool-size: 10
+      auto-commit: false
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    database: postgresql
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    user: ${POSTGRES_USER:pillapago_user}
+    password: ${POSTGRES_PASSWORD:pillapago_pass}
+    baseline-version: 0
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show: always
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: pillapago-api
+
+---
+# Configuración específica para Testcontainers en integración
+testcontainers:
+  postgres:
+    image: postgres:16-alpine
+    db-name: pillapago
+    username: pillapago_user
+    password: pillapago_pass
+  redis:
+    image: redis:7-alpine
