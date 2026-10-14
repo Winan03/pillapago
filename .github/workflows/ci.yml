@@ -9,7 +9,7 @@ on:
 jobs:
   build-and-verify:
     name: Build & Verify
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     services:
       postgres:
@@ -18,22 +18,28 @@ jobs:
           POSTGRES_DB: pillapago
           POSTGRES_USER: pillapago_user
           POSTGRES_PASSWORD: pillapago_pass
-        ports: ['5432:5432']
+        ports:
+          - 5432:5432
         options: >-
           --health-cmd "pg_isready -U pillapago_user -d pillapago"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 5
+
       redis:
         image: redis:7-alpine
-        env:
-          REDIS_URL: redis://redis_user:redis_pass@127.0.0.1:6379
-        ports: ['6379:6379']
+        command: ["redis-server", "--save", "", "--appendonly", "no", "--requirepass", "redis_pass"]
+        ports:
+          - 6379:6379
         options: >-
-          --health-cmd "redis-cli ping"
+          --health-cmd "redis-cli -a redis_pass ping"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 5
+
+    defaults:
+      run:
+        working-directory: backend
 
     steps:
       - name: Checkout repository
@@ -46,31 +52,8 @@ jobs:
           java-version: 21
           cache: maven
 
-      - name: Cache Maven repository
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2/repository
-          key: maven-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-
-      - name: Validate Maven configuration
+      - name: Validate Maven and Java configuration
         run: mvn --version
 
-      - name: Compile project
-        run: mvn compile -B -Dspring.profiles.active=local
-
-      - name: Run Flyway migration
-        run: mvn flyway:migrate -B -Dflyway.user=pillapago_user -Dflyway.password=pillapago_pass
-
-      - name: Execute unit and integration tests
-        run: mvn verify -B \
-          -Dspring.profiles.active=local \
-          -Dtestcontainers.output.enable=true \
-          -Djacoco.exclusion='com.pillapago.**=*Test'
-
-      - name: Generate coverage report
-        run: mvn jacoco:report -B
-
-      - name: Verify actuator health endpoint
-        run: |
-          curl -s http://localhost:8080/actuator/health | jq '.status' | grep -q "UP" || exit 1
+      - name: Compile and Verify project
+        run: mvn clean verify -B

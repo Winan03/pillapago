@@ -3,7 +3,18 @@
 ## 📋 Descripción general
 Pillapago es un motor de decisión antifraude en tiempo real para comercios online, construido con **Spring Boot 3 + Java 21**, PostgreSQL y **Podman**.
 
-## 🚀 Levantamiento en menos de 15 minutos
+---
+
+## 🛠️ Requisitos previos
+Para clonar y levantar el proyecto localmente necesitas:
+1. **Git**
+2. **Podman Desktop** (o Docker Desktop) en ejecución.
+3. **Java 21 JDK** (Recomendado: Eclipse Temurin 21 o Amazon Corretto 21).
+   > *Nota:* **No** necesitas tener Maven instalado en el sistema operativo, ya que el proyecto incluye el **Maven Wrapper (`mvnw`)**.
+
+---
+
+## 🚀 Levantamiento en menos de 15 minutos (Paso a paso)
 
 ### Paso 1: Clonar el repositorio
 ```bash
@@ -11,107 +22,116 @@ git clone https://github.com/Winan03/pillapago.git
 cd pillapago
 ```
 
-### Paso 2: Levantar los contenedores locales (Podman)
+### Paso 2: Configurar las variables de entorno
+Copia la plantilla de variables de entorno:
+```bash
+# En Windows (PowerShell / CMD):
+copy .env.example .env
+
+# En Linux / macOS / Bash:
+cp .env.example .env
+```
+El archivo `.env` ya viene precargado con valores por defecto listos para desarrollo local.
+
+### Paso 3: Levantar los contenedores locales (PostgreSQL & Redis)
+Desde la raíz del proyecto, ejecuta:
 ```bash
 podman compose up -d
 ```
-*Nota: Podman Desktop incluye compatibilidad con `docker compose` commands. Si el comando no funciona, use `podman compose up -d` directamente.*
+*(Si usas Docker Desktop, el comando `docker compose up -d` es equivalente).*
 
-Esto iniciará:
-- **PostgreSQL** en `127.0.0.1:5432` (base de datos: `pillapago`, user: `pillapago_user`, password: `pillapago_pass`)
-- **Redis** en `127.0.0.1:6379` (password: `redis_pass`)
+Esto iniciará los servicios con salud monitoreada:
+- **PostgreSQL 16** en `127.0.0.1:5433` (BD: `pillapago`, usuario: `pillapago_user`, contraseña: `pillapago_pass`)
+- **Redis 7** en `127.0.0.1:6379` (contraseña: `redis_pass`, sin persistencia en disco según RNF-30)
 
-> **Importante para Windows/Podman rootless (RNF-40):** Los puertos solo están expuestos en `127.0.0.1`. Podman se ejecuta en modo rootless por defecto, lo que significa que el contenedor se ejecuta con el usuario actual sin privilegios de administrador. Si experimenta problemas de resolución de red, verifique que el adaptador de red tenga configurado IPv4 en 127.0.0.1.
-
-### Paso 3: Configurar variables de entorno
-Copiar el archivo de ejemplo y ajustar si es necesario:
+Verifica que estén saludables con:
 ```bash
-copy .env.example .env
-```
-El archivo `.env` ya viene con valores por defecto que funcionan con la configuración de Podman Compose. No modifique las contraseñas a menos que cambie también el `compose.yaml`.
-
-### Paso 4: Verificar que la aplicación arranque
-Con los contenedores corriendo, inicie el backend:
-```bash
-cd backend
-mvn spring-boot:run
+podman ps
 ```
 
-Luego verifique el health endpoint:
+### Paso 4: Iniciar la aplicación backend
+Ingresa a la carpeta `backend` y ejecuta la aplicación usando el Maven Wrapper:
+
+* **En Windows:**
+  ```powershell
+  cd backend
+  .\mvnw.cmd spring-boot:run
+  ```
+* **En Linux / macOS:**
+  ```bash
+  cd backend
+  ./mvnw spring-boot:run
+  ```
+
+> Al iniciar, **Flyway aplicará automáticamente las migraciones** de base de datos (`V1__initial_schema.sql`), creando las tablas iniciales (`merchants`, `users`, `api_keys`).
+
+### Paso 5: Verificar que la aplicación esté activa (Health Check)
+En otra terminal o en tu navegador, comprueba el endpoint de salud de Actuator:
 ```bash
 curl http://localhost:8080/actuator/health
 ```
-Debería responder con `"status":"UP"`.
-
-### Paso 5: Ejecutar migraciones Flyway
-Las migraciones se aplican automáticamente al iniciar la aplicación. Para ejecutarlas manualmente:
-```bash
-mvn flyway:migrate
+Debe responder:
+```json
+{"status":"UP","groups":["liveness","readiness"]}
 ```
+
+### Paso 6: Detener el entorno cuando termines de trabajar
+* **Para detener la aplicación Spring Boot:**  
+  En la terminal donde corre el backend, presiona `Ctrl + C`. La aplicación realizará un apagado controlado (*graceful shutdown*).
+* **Para detener los contenedores (PostgreSQL & Redis):**  
+  Desde la raíz del proyecto, ejecuta:
+  ```bash
+  podman compose down
+  ```
+  *(O puedes pausarlos o eliminarlos directamente desde la interfaz gráfica de Podman Desktop).*
+
+---
 
 ## 📁 Estructura del repositorio
 
 ```
 pillapago/
-├── compose.yaml          # Podman Compose con PostgreSQL y Redis (rootless)
-├── .env.example        # Variables de entorno (sin secretos reales)
-├── backend/            # Módulo Spring Boot 3 + Java 21
-│   ├── pom.xml         # Dependencias Maven
+├── compose.yaml                # Podman Compose (PostgreSQL en 5433, Redis en 6379)
+├── .env.example              # Plantilla de variables de entorno (sin credenciales reales)
+├── .gitignore                # Ignora .env, build artifacts y carpetas de IDE
+├── backend/                  # Módulo Spring Boot 3 + Java 21
+│   ├── mvnw / mvnw.cmd       # Maven Wrapper (portabilidad sin instalar Maven)
+│   ├── pom.xml               # Dependencias de Spring Boot, Flyway y Testcontainers
 │   ├── src/main/java/com/pillapago/main/PillapagoApplication.java
 │   ├── src/main/resources/application.yml
-│   └── src/main/resources/db/migration/V1__initial_schema.sql
-├── .github/workflows/ci.yml  # GitHub Actions CI/CD
-└── docs/               # Documentación adicional
+│   ├── src/main/resources/db/migration/V1__initial_schema.sql
+│   └── src/test/             # Pruebas unitarias y de integración
+├── .github/workflows/ci.yml  # Pipeline CI/CD con GitHub Actions
+└── docs/                     # Especificaciones y arquitectura
 ```
+
+---
 
 ## 🔧 Consideraciones para Windows con Podman Rootless
 
-### Problemas comunes y soluciones:
+1. **Puerto 5433 para PostgreSQL:** Se seleccionó el puerto `5433` hacia el host para evitar colisiones con posibles instalaciones locales de PostgreSQL en Windows que suelen ocupar el puerto `5432`.
+2. **Modo Rootless y Redes:** Los puertos están vinculados estrictamente a `127.0.0.1` respetando el principio de mínimo privilegio (RNF-40).
+3. **Almacenamiento de WSL:** En entornos Windows con poco espacio en el disco C:, se recomienda alojar las distros de WSL/Podman en discos secundarios (como D:\WSL).
 
-1. **Puertos bloqueados:** Los contenedores publican solo en `127.0.0.1`. Si otro servicio usa el puerto 5432 o 6379, edite `compose.yaml` para cambiar los puertos.
-
-2. **Modo rootless:** Podman se ejecuta por defecto sin privilegios de administrador. Si necesita contenedores con privilegios, inicie Podman Desktop con permisos elevados o cambie la configuración.
-
-3. **Configuración de red:** El archivo `compose.yaml` usa redes puente con `127.0.0.1` explícito. La especificación RNF-40 requiere puertos publicados solo en 127.0.0.1 para aislamiento mínimo privilegio.
-
-4. **Java 21 + Testcontainers:** El `pom.xml` incluye configuración para Testcontainers con GC serial (`-XX:+UseSerialGC`) para mantener el consumo de memoria ≤ 512MB según los requisitos no funcionales.
-
-5. **Volúmenes:** El `compose.yaml` actual no usa volúmenes nombrados para compatibilidad rootless. Si necesita persistencia, use directorios locales en Windows.
-
-### Levantamiento alternativo con Podman CLI:
-
-Si `podman compose` no está disponible, use:
-
+### Levantamiento manual alternativo con Podman CLI:
+Si no se utiliza Compose:
 ```bash
-# Levantar PostgreSQL manualmente
-podman run -d -p 127.0.0.1:5432:5432 -e POSTGRES_DB=pillapago -e POSTGRES_USER=pillapago_user -e POSTGRES_PASSWORD=pillapago_pass --name pillapago-postgres docker.io/library/postgres:16-alpine
+# PostgreSQL
+podman run -d -p 127.0.0.1:5433:5432 -e POSTGRES_DB=pillapago -e POSTGRES_USER=pillapago_user -e POSTGRES_PASSWORD=pillapago_pass --name pillapago-postgres docker.io/library/postgres:16-alpine
 
-# Levantar Redis manualmente
-podman run -d -p 127.0.0.1:6379:6379 --name pillapago-redis docker.io/library/redis:7-alpine --save "" --append-only "no"
+# Redis
+podman run -d -p 127.0.0.1:6379:6379 --name pillapago-redis docker.io/library/redis:7-alpine redis-server --save "" --appendonly no --requirepass redis_pass
 ```
 
-## 🛠️ Scripts disponibles
+---
 
-| Comando | Descripción |
-|---------|-------------|
-| `mvn compile` | Compilar el proyecto |
-| `mvn flyway:migrate` | Ejecutar migraciones Flyway |
-| `mvn verify` | Ejecutar todas las pruebas (usa Testcontainers) |
-| `mvn jacoco:report` | Generar reporte de cobertura |
-| `podman compose down` | Detener y remover contenedores |
-| `podman compose up -d` | Levantar contenedores en background |
+## 🛠️ Comandos útiles con Maven Wrapper
 
-## 📦 Tecnologías utilizadas
+Desde la carpeta `backend/`:
 
-- **Java 21** + **Spring Boot 3.2.4**
-- **PostgreSQL 16** + **Flyway** para migraciones
-- **Redis 7** para caché y velocity
-- **Testcontainers** para pruebas integradas
-- **GitHub Actions** para CI/CD
-- **Podman Compose** para entorno local (rootless por defecto)
-
-### Consideraciones de seguridad (RNF-40 Mínimo privilegio):
-- Contenedores rootless: el usuario de la aplicación no tiene privilegios de DDL en la BD
-- Puertos solo en 127.0.0.1: ningún acceso externo no autorizado
-- Sin volúmenes persistentes en disco para Redis (según RNF-30: "Redis sin persistencia en disco")
-- Islas de red por tenant via `merchant_id` en todas las consultas
+| Tarea | Windows | Linux / macOS |
+|---|---|---|
+| **Compilar** | `.\mvnw.cmd compile` | `./mvnw compile` |
+| **Ejecutar pruebas** | `.\mvnw.cmd test` | `./mvnw test` |
+| **Empaquetar y verificar (CI local)** | `.\mvnw.cmd clean verify` | `./mvnw clean verify` |
+| **Arrancar la aplicación** | `.\mvnw.cmd spring-boot:run` | `./mvnw spring-boot:run` |

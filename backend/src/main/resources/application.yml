@@ -7,9 +7,9 @@ spring:
   application:
     name: pillapago-api
   datasource:
-    url: jdbc:postgresql://127.0.0.1:5432/pillapago
-    username: ${POSTGRES_USER:-pillapago_user}
-    password: ${POSTGRES_PASSWORD:-pillapago_pass}
+    url: jdbc:postgresql://${POSTGRES_HOST:127.0.0.1}:${POSTGRES_PORT:5433}/pillapago
+    username: ${POSTGRES_USER:pillapago_user}
+    password: ${POSTGRES_PASSWORD:pillapago_pass}
     hikari:
       maximum-pool-size: 10
       auto-commit: false
@@ -23,8 +23,8 @@ spring:
     enabled: true
     baseline-on-migrate: true
     locations: classpath:db/migration
-    user: ${POSTGRES_USER:-pillapago_user}
-    password: ${POSTGRES_PASSWORD:-pillapago_pass}
+    user: ${POSTGRES_USER:pillapago_user}
+    password: ${POSTGRES_PASSWORD:pillapago_pass}
     baseline-version: 0
 
 management:

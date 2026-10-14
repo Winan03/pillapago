@@ -10,7 +10,7 @@ services:
     # Volumen nombrado desactivado para modo rootless; usando directorio directo
     volumes: []
     ports:
-      - "127.0.0.1:5432:5432/tcp"
+      - "127.0.0.1:5433:5432/tcp"
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER:-pillapago_user}", "-d", "pillapago"]
       interval: 5s
@@ -22,14 +22,14 @@ services:
   redis:
     image: docker.io/library/redis:7-alpine
     container_name: pillapago-redis
-    # Modo sin persistencia en disco (según spec RNF-30)
-    command: ["--save", "", "--append-only", "no"]
+    # Modo sin persistencia en disco (según spec RNF-30) y con contraseña (RNF-29)
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--requirepass", "${REDIS_PASSWORD:-redis_pass}"]
     environment:
-      - REDIS_URL=redis://${REDIS_USER:-redis_user}:${REDIS_PASSWORD:-redis_pass}@127.0.0.1:6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis_pass}
     ports:
       - "127.0.0.1:6379:6379/tcp"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD:-redis_pass} ping || exit 1"]
       interval: 5s
       timeout: 5s
       retries: 5
