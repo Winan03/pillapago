@@ -1,0 +1,13 @@
+/* Estilos globales — se reemplazarán con un sistema de diseño en la Fase 6 */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background-color: #f8fafc;
+  color: #1e293b;
+  line-height: 1.5;
+}
