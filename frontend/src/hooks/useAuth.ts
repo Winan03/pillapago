@@ -1,26 +1,8 @@
 /**
- * Hook de autenticación — gestiona el estado de sesión en el cliente.
- * Se implementa en la Fase 6.
+ * Hook de autenticación — expone el estado de sesión en memoria y funciones de login/logout.
  */
-import { useState } from 'react'
-import { authApi, type LoginRequest } from '../api/auth'
+import { useAuthContext } from '../context/AuthContext'
 
 export function useAuth() {
-  const [isAuthenticated, setIsAuthenticated] = useState(
-    () => !!localStorage.getItem('access_token')
-  )
-
-  const login = async (credentials: LoginRequest) => {
-    const { data } = await authApi.login(credentials)
-    localStorage.setItem('access_token', data.accessToken)
-    setIsAuthenticated(true)
-  }
-
-  const logout = async () => {
-    await authApi.logout()
-    localStorage.removeItem('access_token')
-    setIsAuthenticated(false)
-  }
-
-  return { isAuthenticated, login, logout }
+  return useAuthContext()
 }

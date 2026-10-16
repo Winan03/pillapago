@@ -1,4 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider } from './context/AuthContext'
+import { ProtectedRoute } from './components/ProtectedRoute'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import CasesPage from './pages/CasesPage'
@@ -6,22 +8,56 @@ import RulesPage from './pages/RulesPage'
 import AuditPage from './pages/AuditPage'
 
 /**
- * Enrutamiento principal de la aplicación.
- * Las páginas se implementan en la Fase 6 (Frontend y dashboard).
- * Por ahora solo son placeholders para que la estructura compile.
+ * Enrutamiento principal de la aplicación Pillapago.
+ * Las rutas protegidas se resguardan mediante <ProtectedRoute> y el estado en memoria de <AuthProvider>.
  */
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/cases" element={<CasesPage />} />
-        <Route path="/rules" element={<RulesPage />} />
-        <Route path="/audit" element={<AuditPage />} />
-        {/* Redirige la raíz al dashboard */}
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Ruta pública */}
+          <Route path="/login" element={<LoginPage />} />
+
+          {/* Rutas protegidas con RBAC */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={['MERCHANT_ADMIN', 'RISK_ANALYST', 'AUDITOR']}>
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/cases"
+            element={
+              <ProtectedRoute allowedRoles={['MERCHANT_ADMIN', 'RISK_ANALYST']}>
+                <CasesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/rules"
+            element={
+              <ProtectedRoute allowedRoles={['MERCHANT_ADMIN']}>
+                <RulesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/audit"
+            element={
+              <ProtectedRoute allowedRoles={['MERCHANT_ADMIN', 'AUDITOR']}>
+                <AuditPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Redirección por defecto */}
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   )
 }
