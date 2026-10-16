@@ -1,0 +1,104 @@
+{
+  "info": {
+    "name": "Pillapago - Transacciones y Motor de Evaluación (HU-06)",
+    "description": "Colección de pruebas para el endpoint de evaluación antifraude POST /v1/transactions/evaluate del sistema Pillapago.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "apiKey",
+      "value": "pp_live_test_key_12345",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Evaluar Transacción - Aprobada (Bajo Riesgo)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" },
+          { "key": "Idempotency-Key", "value": "idem-approve-001", "type": "text" },
+          { "key": "Content-Type", "value": "application/json", "type": "text" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transactionId\": \"TX-OK-1001\",\n  \"amount\": 85.50,\n  \"currency\": \"PEN\",\n  \"customerId\": \"cus_safe_01\",\n  \"emailHash\": \"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\",\n  \"deviceId\": \"dev_safe_01\",\n  \"ipAddress\": \"190.237.45.12\",\n  \"cardFingerprint\": \"fp_safe_99\",\n  \"cardCountry\": \"PE\",\n  \"shippingCountry\": \"PE\",\n  \"occurredAt\": \"2026-10-15T20:00:00Z\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/v1/transactions/evaluate",
+          "host": ["{{baseUrl}}"],
+          "path": ["v1", "transactions", "evaluate"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "2. Evaluar Transacción - En Revisión (Riesgo Intermedio)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" },
+          { "key": "Idempotency-Key", "value": "idem-review-002", "type": "text" },
+          { "key": "Content-Type", "value": "application/json", "type": "text" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transactionId\": \"TX-REV-2002\",\n  \"amount\": 2200.00,\n  \"currency\": \"PEN\",\n  \"customerId\": \"cus_med_02\",\n  \"emailHash\": \"9b74c9897bac770ffc029102a200c5de\",\n  \"deviceId\": \"dev_med_02\",\n  \"ipAddress\": \"190.113.12.89\",\n  \"cardFingerprint\": \"fp_med_77\",\n  \"cardCountry\": \"US\",\n  \"shippingCountry\": \"PE\",\n  \"occurredAt\": \"2026-10-15T20:05:00Z\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/v1/transactions/evaluate",
+          "host": ["{{baseUrl}}"],
+          "path": ["v1", "transactions", "evaluate"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "3. Evaluar Transacción - Rechazada (Alto Riesgo)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" },
+          { "key": "Idempotency-Key", "value": "idem-reject-003", "type": "text" },
+          { "key": "Content-Type", "value": "application/json", "type": "text" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transactionId\": \"TX-REJ-3003\",\n  \"amount\": 4500.00,\n  \"currency\": \"PEN\",\n  \"customerId\": \"cus_risk_03\",\n  \"emailHash\": \"4f53cda18c2baa0c0354bb5f9a3ecbe5\",\n  \"deviceId\": \"dev_risk_99\",\n  \"ipAddress\": \"185.220.101.5\",\n  \"cardFingerprint\": \"fp_stolen_12\",\n  \"cardCountry\": \"RU\",\n  \"shippingCountry\": \"PE\",\n  \"occurredAt\": \"2026-10-15T20:10:00Z\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/v1/transactions/evaluate",
+          "host": ["{{baseUrl}}"],
+          "path": ["v1", "transactions", "evaluate"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "4. Validación de Error - Monto Inválido (RFC 7807)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "X-API-Key", "value": "{{apiKey}}", "type": "text" },
+          { "key": "Content-Type", "value": "application/json", "type": "text" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transactionId\": \"TX-ERR-001\",\n  \"amount\": -50.00,\n  \"currency\": \"PEN\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/v1/transactions/evaluate",
+          "host": ["{{baseUrl}}"],
+          "path": ["v1", "transactions", "evaluate"]
+        }
+      },
+      "response": []
+    }
+  ]
+}
