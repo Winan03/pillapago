@@ -36,3 +36,9 @@ build/
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+# Temporales y reportes de pruebas locales
+temp/
+temp_acceptance_report/
+*.tmp
+
