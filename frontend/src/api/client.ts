@@ -1,10 +1,9 @@
 /**
- * Cliente HTTP centralizado — todas las llamadas a la API pasan por aquí.
- * Configurado con baseURL, interceptores de auth (JWT) y manejo de errores.
- *
- * Se implementa en la Fase 6.
+ * Cliente HTTP centralizado — Axios configurado con baseURL e interceptores de seguridad.
+ * El token JWT se extrae estrictamente del almacén en memoria (tokenStore).
  */
 import axios from 'axios'
+import { tokenStore } from './tokenStore'
 
 const apiClient = axios.create({
   baseURL: '/v1',
@@ -13,9 +12,9 @@ const apiClient = axios.create({
   },
 })
 
-// Interceptor: añade el token JWT a cada petición
+// Interceptor: añade el token JWT en memoria a cada petición si existe
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token')
+  const token = tokenStore.getToken()
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }

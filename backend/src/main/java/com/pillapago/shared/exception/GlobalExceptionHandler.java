@@ -1,0 +1,92 @@
+package com.pillapago.shared.exception;
+
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Manejador global de excepciones bajo el estándar RFC 7807 (Problem Details).
+ */
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler({InvalidCredentialsException.class, BadCredentialsException.class})
+    public ResponseEntity<Map<String, Object>> handleInvalidCredentials(Exception ex, HttpServletRequest request) {
+        Map<String, Object> problem = Map.of(
+                "type", "https://pillapago.dev/errors/unauthorized",
+                "title", "No autorizado",
+                "status", HttpStatus.UNAUTHORIZED.value(),
+                "detail", "Credenciales inválidas",
+                "instance", request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem);
+    }
+
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleRateLimit(RateLimitExceededException ex, HttpServletRequest request) {
+        Map<String, Object> problem = new HashMap<>();
+        problem.put("type", "https://pillapago.dev/errors/rate-limit");
+        problem.put("title", "Demasiadas peticiones");
+        problem.put("status", HttpStatus.TOO_MANY_REQUESTS.value());
+        problem.put("detail", ex.getMessage());
+        problem.put("instance", request.getRequestURI());
+        if (ex.getRetryAfterSeconds() > 0) {
+            problem.put("retryAfterSeconds", ex.getRetryAfterSeconds());
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PROBLEM_JSON);
+        if (ex.getRetryAfterSeconds() > 0) {
+            headers.set(HttpHeaders.RETRY_AFTER, String.valueOf(ex.getRetryAfterSeconds()));
+        }
+
+        return new ResponseEntity<>(problem, headers, HttpStatus.TOO_MANY_REQUESTS);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
+        Map<String, Object> problem = Map.of(
+                "type", "https://pillapago.dev/errors/forbidden",
+                "title", "Acceso prohibido",
+                "status", HttpStatus.FORBIDDEN.value(),
+                "detail", "No cuenta con los permisos necesarios para realizar esta acción",
+                "instance", request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest request) {
+        Map<String, String> errors = new HashMap<>();
+        for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
+            errors.put(fieldError.getField(), fieldError.getDefaultMessage());
+        }
+
+        Map<String, Object> problem = Map.of(
+                "type", "https://pillapago.dev/errors/validation",
+                "title", "Datos inválidos",
+                "status", HttpStatus.BAD_REQUEST.value(),
+                "detail", "La solicitud contiene campos inválidos",
+                "instance", request.getRequestURI(),
+                "invalidParams", errors
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem);
+    }
+}

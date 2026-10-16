@@ -40,5 +40,7 @@ Desktop.ini
 # Temporales y reportes de pruebas locales
 temp/
 temp_acceptance_report/
+temp_auth_acceptance_report/
+temp_*/
 *.tmp
 
