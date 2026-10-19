@@ -12,6 +12,7 @@ import com.pillapago.tenant.domain.Merchant;
 import com.pillapago.tenant.domain.User;
 import com.pillapago.tenant.domain.UserRole;
 import com.pillapago.tenant.domain.UserStatus;
+import com.pillapago.tenant.repository.ApiKeyRepository;
 import com.pillapago.tenant.repository.MerchantRepository;
 import com.pillapago.tenant.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -79,6 +80,9 @@ public class AuthAcceptanceCriteriaValidationTest {
     private MerchantRepository merchantRepository;
 
     @Autowired
+    private ApiKeyRepository apiKeyRepository;
+
+    @Autowired
     private RefreshTokenRepository refreshTokenRepository;
 
     @Autowired
@@ -97,6 +101,8 @@ public class AuthAcceptanceCriteriaValidationTest {
 
     @BeforeEach
     void setUp() {
+        // Limpieza en orden inverso de dependencias FK (apiKeys → refreshTokens → users → merchants)
+        apiKeyRepository.deleteAll();
         refreshTokenRepository.deleteAll();
         userRepository.deleteAll();
         merchantRepository.deleteAll();

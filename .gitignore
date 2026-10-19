@@ -1,46 +1,121 @@
-# Entornos y Secretos
-.env
-*.env.local
+# ==============================================================================
+# PILLAPAGO - REGLAS DE EXCLUSIÓN GIT (SEGURIDAD Y PROTECCIÓN DE DATOS)
+# ==============================================================================
 
-# Maven / Java
+# ------------------------------------------------------------------------------
+# 1. Variables de Entorno, Credenciales y Secretos Criptográficos (CRÍTICO)
+# ------------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.env.local
+*.env.development.local
+*.env.test.local
+*.env.production.local
+
+# Claves privadas, certificados y almacenes de claves (Keystores)
+*.pem
+*.key
+*.pkcs12
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.crt
+*.cer
+
+# Credenciales de proveedores Cloud (AWS, GCP, Vault)
+credentials.json
+service-account*.json
+*secret*.json
+.aws/
+.gcloud/
+
+# ------------------------------------------------------------------------------
+# 2. Archivos de Configuración Local con Overrides Privados
+# ------------------------------------------------------------------------------
+**/application-local.yml
+**/application-local.properties
+**/application-secret.yml
+**/application-secret.properties
+**/application-dev-local.yml
+
+# ------------------------------------------------------------------------------
+# 3. Compilación, Bytecode y Dependencias (Maven / Java 21)
+# ------------------------------------------------------------------------------
 target/
+**/target/
 *.class
 *.jar
 *.war
-*.nar
 *.ear
+*.nar
 *.zip
 *.tar.gz
 *.rar
+
+# Reportes y logs de Maven Surefire / JVM Crashes
+*.dump
+*.dumpstream
+hs_err_pid*
+replay_pid*
 backend/build_output.txt
 backend/dependency_output.txt
 
-# IDEs
+# JaCoCo Code Coverage
+**/jacoco.exec
+**/jacoco.xml
+**/jacoco-resources/
+
+# ------------------------------------------------------------------------------
+# 4. Entornos de Desarrollo e IDEs (Evita filtrar rutas locales y credenciales)
+# ------------------------------------------------------------------------------
 .idea/
 *.iml
+*.iws
+*.ipr
 .vscode/
+*.code-workspace
+.project
+.classpath
+.settings/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.bak
 
-# Node / Frontend
+# ------------------------------------------------------------------------------
+# 5. Frontend / Node (React SPA)
+# ------------------------------------------------------------------------------
 node_modules/
+**/node_modules/
 dist/
 build/
 .npm
+.vite/
+.turbo/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# SO
+# ------------------------------------------------------------------------------
+# 6. Carpetas Temporales y Volcados Locales de Pruebas
+# ------------------------------------------------------------------------------
+temp/
+temp_*/
+**/temp_*/
+*.tmp
+*.temp
+
+# ------------------------------------------------------------------------------
+# 7. Archivos de Sistema Operativo
+# ------------------------------------------------------------------------------
 Thumbs.db
 Desktop.ini
 .DS_Store
-
-# Temporales y reportes de pruebas locales
-temp/
-temp_acceptance_report/
-temp_auth_acceptance_report/
-temp_*/
-*.tmp
-
+.DS_Store?
+._*
+$RECYCLE.BIN/

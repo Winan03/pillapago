@@ -1,0 +1,263 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1150 1120" width="100%" height="100%">
+  <defs>
+    <style>
+      .bg { fill: #ffffff; }
+      .uml-title { fill: #1e293b; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 19px; font-weight: 700; }
+      .uml-subtitle { fill: #64748b; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 13px; }
+      
+      /* Lifelines */
+      .lifeline-line { stroke: #0284c7; stroke-width: 1.5; stroke-dasharray: 6 5; }
+      
+      /* Participant boxes */
+      .participant-box { fill: #f0f9ff; stroke: #0284c7; stroke-width: 1.5; rx: 4; }
+      .participant-name { fill: #0f172a; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 13px; font-weight: 600; text-anchor: middle; }
+      .participant-type { fill: #0369a1; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 11px; text-anchor: middle; }
+      
+      /* Actor Stick Figure */
+      .actor-icon { stroke: #0284c7; stroke-width: 1.8; fill: none; stroke-linecap: round; }
+      
+      /* Activation Bars */
+      .activation-bar { fill: #e0f2fe; stroke: #0284c7; stroke-width: 1.5; }
+      .activation-bar-sub { fill: #bae6fd; stroke: #0284c7; stroke-width: 1.5; }
+      
+      /* Message Lines */
+      .msg-call { stroke: #0f172a; stroke-width: 1.5; marker-end: url(#arrow-sync); }
+      .msg-return { stroke: #64748b; stroke-width: 1.5; stroke-dasharray: 5 4; marker-end: url(#arrow-reply); }
+      .msg-self { stroke: #0f172a; stroke-width: 1.5; fill: none; marker-end: url(#arrow-sync); }
+      
+      /* Labels */
+      .msg-label { fill: #0f172a; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 11.5px; font-weight: 500; }
+      .return-label { fill: #475569; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 11px; font-weight: 500; font-style: italic; }
+      
+      /* Fragment Boxes (alt, opt, group) */
+      .fragment-box { fill: none; stroke: #94a3b8; stroke-width: 1.2; stroke-dasharray: 4 2; }
+      .fragment-header { fill: #e2e8f0; stroke: #94a3b8; stroke-width: 1.2; }
+      .fragment-label { fill: #334155; font-family: ui-monospace, monospace; font-size: 11px; font-weight: 700; }
+      .fragment-divider { stroke: #94a3b8; stroke-width: 1; stroke-dasharray: 3 3; }
+    </style>
+    
+    <marker id="arrow-sync" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#0f172a" />
+    </marker>
+    <marker id="arrow-reply" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#64748b" />
+    </marker>
+  </defs>
+
+  <rect width="1150" height="1120" class="bg" />
+
+  <!-- Diagram Title -->
+  <text x="50" y="38" class="uml-title">Diagrama de Secuencia UML: HU-05 Gestión de API Keys</text>
+  <text x="50" y="58" class="uml-subtitle">Interacción de componentes: Autenticación, Hashing SHA-256 (RNF-12), Revocación y Rechazo Inmediato</text>
+
+  <!-- PARTICIPANTS & LIFELINES -->
+  
+  <!-- 1. Actor: MerchantAdmin (X = 90) -->
+  <circle cx="90" cy="92" r="10" class="actor-icon" />
+  <line x1="90" y1="102" x2="90" y2="122" class="actor-icon" />
+  <line x1="74" y1="110" x2="106" y2="110" class="actor-icon" />
+  <line x1="90" y1="122" x2="78" y2="140" class="actor-icon" />
+  <line x1="90" y1="122" x2="102" y2="140" class="actor-icon" />
+  <text x="90" y="156" class="participant-name">MerchantAdmin</text>
+  <text x="90" y="170" class="participant-type">&lt;&lt;actor&gt;&gt;</text>
+  <line x1="90" y1="178" x2="90" y2="1080" class="lifeline-line" />
+
+  <!-- 2. Controller: ApiKeyController (X = 270) -->
+  <rect x="195" y="122" width="150" height="46" class="participant-box" />
+  <text x="270" y="142" class="participant-name">ApiKeyController</text>
+  <text x="270" y="157" class="participant-type">&lt;&lt;boundary&gt;&gt;</text>
+  <line x1="270" y1="168" x2="270" y2="1080" class="lifeline-line" />
+
+  <!-- 3. Security Filter: ApiKeyAuthFilter (X = 470) -->
+  <rect x="390" y="122" width="160" height="46" class="participant-box" />
+  <text x="470" y="142" class="participant-name">ApiKeyAuthFilter</text>
+  <text x="470" y="157" class="participant-type">&lt;&lt;security filter&gt;&gt;</text>
+  <line x1="470" y1="168" x2="470" y2="1080" class="lifeline-line" />
+
+  <!-- 4. Service: ApiKeyService (X = 680) -->
+  <rect x="610" y="122" width="140" height="46" class="participant-box" />
+  <text x="680" y="142" class="participant-name">ApiKeyService</text>
+  <text x="680" y="157" class="participant-type">&lt;&lt;control&gt;&gt;</text>
+  <line x1="680" y1="168" x2="680" y2="1080" class="lifeline-line" />
+
+  <!-- 5. Crypto: ApiKeyCryptoService (X = 870) -->
+  <rect x="800" y="122" width="140" height="46" class="participant-box" />
+  <text x="870" y="142" class="participant-name">ApiKeyCrypto</text>
+  <text x="870" y="157" class="participant-type">&lt;&lt;utility&gt;&gt;</text>
+  <line x1="870" y1="168" x2="870" y2="1080" class="lifeline-line" />
+
+  <!-- 6. Repository: ApiKeyRepository (X = 1040) -->
+  <rect x="975" y="122" width="130" height="46" class="participant-box" />
+  <text x="1040" y="142" class="participant-name">ApiKeyRepository</text>
+  <text x="1040" y="157" class="participant-type">&lt;&lt;entity / db&gt;&gt;</text>
+  <line x1="1040" y1="168" x2="1040" y2="1080" class="lifeline-line" />
+
+
+  <!-- ========================================================================= -->
+  <!-- SCENARIO 1: CREAR API KEY (POST /v1/api-keys) -->
+  <!-- ========================================================================= -->
+  <rect x="40" y="195" width="1070" height="255" class="fragment-box" />
+  <path d="M 40 195 L 140 195 L 150 210 L 40 210 Z" class="fragment-header" />
+  <text x="50" y="206" class="fragment-label">opt: Crear API Key</text>
+
+  <!-- Activation bars Scenario 1 -->
+  <rect x="85" y="215" width="10" height="215" class="activation-bar" />
+  <rect x="265" y="222" width="10" height="200" class="activation-bar" />
+  <rect x="675" y="235" width="10" height="175" class="activation-bar" />
+  <rect x="865" y="248" width="10" height="70" class="activation-bar-sub" />
+  <rect x="1035" y="340" width="10" height="45" class="activation-bar-sub" />
+
+  <!-- 1.0 MerchantAdmin -> ApiKeyController -->
+  <line x1="95" y1="222" x2="265" y2="222" class="msg-call" />
+  <text x="105" y="217" class="msg-label">1.0: createApiKey(request: {"name": "Shopify Prod"})</text>
+
+  <!-- 1.1 ApiKeyController -> ApiKeyService -->
+  <line x1="275" y1="235" x2="675" y2="235" class="msg-call" />
+  <text x="285" y="230" class="msg-label">1.1: createApiKey(request, merchantId)</text>
+
+  <!-- 1.2 ApiKeyService -> ApiKeyCrypto (generate) -->
+  <line x1="685" y1="248" x2="865" y2="248" class="msg-call" />
+  <text x="695" y="243" class="msg-label">1.2: generateRawKey() [SecureRandom 256-bit]</text>
+  <line x1="865" y1="270" x2="685" y2="270" class="msg-return" />
+  <text x="705" y="265" class="return-label">rawKey: "pp_live_0a51b..."</text>
+
+  <!-- 1.3 ApiKeyService -> ApiKeyCrypto (hash) -->
+  <line x1="685" y1="288" x2="865" y2="288" class="msg-call" />
+  <text x="695" y="283" class="msg-label">1.3: computeSha256(rawKey)</text>
+  <line x1="865" y1="310" x2="685" y2="310" class="msg-return" />
+  <text x="705" y="305" class="return-label">keyHash (64 hex chars)</text>
+
+  <!-- 1.4 ApiKeyService -> ApiKeyRepository (save) -->
+  <line x1="685" y1="340" x2="1035" y2="340" class="msg-call" />
+  <text x="695" y="335" class="msg-label">1.4: save(ApiKey(merchantId, name, prefix, hash, active=true))</text>
+  <line x1="1035" y1="375" x2="685" y2="375" class="msg-return" />
+  <text x="735" y="370" class="return-label">savedApiKey (id, createdAt)</text>
+
+  <!-- 1.5 ApiKeyService -> ApiKeyController -->
+  <line x1="675" y1="400" x2="275" y2="400" class="msg-return" />
+  <text x="320" y="395" class="return-label">ApiKeyCreatedResponse(id, prefix, rawKey [UNA VEZ], userMessage)</text>
+
+  <!-- 1.6 ApiKeyController -> MerchantAdmin -->
+  <line x1="265" y1="418" x2="95" y2="418" class="msg-return" />
+  <text x="105" y="413" class="return-label">201 Created {"apiKey": "pp_live_...", "userMessage": "Guárdela ahora..."}</text>
+
+
+  <!-- ========================================================================= -->
+  <!-- SCENARIO 2: CONSULTAR API KEYS (GET /v1/api-keys) -->
+  <!-- ========================================================================= -->
+  <rect x="40" y="470" width="1070" height="170" class="fragment-box" />
+  <path d="M 40 470 L 140 470 L 150 485 L 40 485 Z" class="fragment-header" />
+  <text x="50" y="481" class="fragment-label">opt: Listar Keys</text>
+
+  <!-- Activation bars Scenario 2 -->
+  <rect x="85" y="490" width="10" height="130" class="activation-bar" />
+  <rect x="265" y="495" width="10" height="115" class="activation-bar" />
+  <rect x="675" y="505" width="10" height="95" class="activation-bar" />
+  <rect x="1035" y="520" width="10" height="50" class="activation-bar-sub" />
+
+  <!-- 2.0 MerchantAdmin -> ApiKeyController -->
+  <line x1="95" y1="495" x2="265" y2="495" class="msg-call" />
+  <text x="105" y="490" class="msg-label">2.0: listApiKeys() [Bearer JWT]</text>
+
+  <!-- 2.1 ApiKeyController -> ApiKeyService -->
+  <line x1="275" y1="505" x2="675" y2="505" class="msg-call" />
+  <text x="285" y="500" class="msg-label">2.1: listApiKeys(principal.merchantId)</text>
+
+  <!-- 2.2 ApiKeyService -> ApiKeyRepository -->
+  <line x1="685" y1="520" x2="1035" y2="520" class="msg-call" />
+  <text x="695" y="515" class="msg-label">2.2: findAllByMerchantIdOrderByCreatedAtDesc(merchantId)</text>
+  <line x1="1035" y1="560" x2="685" y2="560" class="msg-return" />
+  <text x="740" y="555" class="return-label">List&lt;ApiKey&gt; (entidades)</text>
+
+  <!-- 2.3 ApiKeyService -> ApiKeyController -->
+  <line x1="675" y1="590" x2="275" y2="590" class="msg-return" />
+  <text x="310" y="585" class="return-label">List&lt;ApiKeySummaryResponse&gt; (solo name, keyPrefix, active, createdAt)</text>
+
+  <!-- 2.4 ApiKeyController -> MerchantAdmin -->
+  <line x1="265" y1="605" x2="95" y2="605" class="msg-return" />
+  <text x="105" y="600" class="return-label">200 OK [{"id": "...", "keyPrefix": "pp_live_0a51...", "active": true}] (Sin secretos)</text>
+
+
+  <!-- ========================================================================= -->
+  <!-- SCENARIO 3: REVOCAR API KEY (DELETE /v1/api-keys/{id}) -->
+  <!-- ========================================================================= -->
+  <rect x="40" y="660" width="1070" height="190" class="fragment-box" />
+  <path d="M 40 660 L 155 660 L 165 675 L 40 675 Z" class="fragment-header" />
+  <text x="50" y="671" class="fragment-label">opt: Revocar Key</text>
+
+  <!-- Activation bars Scenario 3 -->
+  <rect x="85" y="680" width="10" height="150" class="activation-bar" />
+  <rect x="265" y="685" width="10" height="135" class="activation-bar" />
+  <rect x="675" y="695" width="10" height="115" class="activation-bar" />
+  <rect x="1035" y="705" width="10" height="75" class="activation-bar-sub" />
+
+  <!-- 3.0 MerchantAdmin -> ApiKeyController -->
+  <line x1="95" y1="685" x2="265" y2="685" class="msg-call" />
+  <text x="105" y="680" class="msg-label">3.0: revokeApiKey(id: "b102d0...")</text>
+
+  <!-- 3.1 ApiKeyController -> ApiKeyService -->
+  <line x1="275" y1="695" x2="675" y2="695" class="msg-call" />
+  <text x="285" y="690" class="msg-label">3.1: revokeApiKey(id, principal.merchantId)</text>
+
+  <!-- 3.2 ApiKeyService -> ApiKeyRepository (find) -->
+  <line x1="685" y1="705" x2="1035" y2="705" class="msg-call" />
+  <text x="695" y="700" class="msg-label">3.2: findByIdAndMerchantId(id, merchantId)</text>
+  <line x1="1035" y1="730" x2="685" y2="730" class="msg-return" />
+  <text x="750" y="725" class="return-label">Optional&lt;ApiKey&gt;</text>
+
+  <!-- 3.3 ApiKeyService: set active = false & save -->
+  <line x1="685" y1="745" x2="1035" y2="745" class="msg-call" />
+  <text x="695" y="740" class="msg-label">3.3: apiKey.setActive(false) -&gt; save(apiKey)</text>
+  <line x1="1035" y1="770" x2="685" y2="770" class="msg-return" />
+  <text x="760" y="765" class="return-label">apiKey(active = false)</text>
+
+  <!-- 3.4 ApiKeyService -> ApiKeyController -->
+  <line x1="675" y1="795" x2="275" y2="795" class="msg-return" />
+  <text x="320" y="790" class="return-label">ApiKeyRevokedResponse(id, status="REVOKED", userMessage="Revocada...")</text>
+
+  <!-- 3.5 ApiKeyController -> MerchantAdmin -->
+  <line x1="265" y1="810" x2="95" y2="810" class="msg-return" />
+  <text x="105" y="805" class="return-label">200 OK {"status": "REVOKED", "userMessage": "La API key ha sido revocada exitosamente"}</text>
+
+
+  <!-- ========================================================================= -->
+  <!-- SCENARIO 4: VALIDACIÓN POST-REVOCACIÓN (RECHAZO EN FILTRO DE SEGURIDAD) -->
+  <!-- ========================================================================= -->
+  <rect x="40" y="870" width="1070" height="195" class="fragment-box" />
+  <path d="M 40 870 L 195 870 L 205 885 L 40 885 Z" class="fragment-header" />
+  <text x="50" y="881" class="fragment-label">alt: Validación Post-Revocación</text>
+
+  <!-- Activation bars Scenario 4 -->
+  <rect x="85" y="890" width="10" height="155" class="activation-bar" />
+  <rect x="465" y="895" width="10" height="140" class="activation-bar" />
+  <rect x="675" y="910" width="10" height="75" class="activation-bar-sub" />
+  <rect x="865" y="920" width="10" height="30" class="activation-bar-sub" />
+  <rect x="1035" y="940" width="10" height="35" class="activation-bar-sub" />
+
+  <!-- 4.0 Client -> ApiKeyAuthFilter -->
+  <line x1="95" y1="895" x2="465" y2="895" class="msg-call" />
+  <text x="105" y="890" class="msg-label">4.0: GET /v1/test/api-key-secured [Header: X-API-Key: pp_live_0a51b...] (Clave Revocada)</text>
+
+  <!-- 4.1 Filter -> Service -->
+  <line x1="475" y1="910" x2="675" y2="910" class="msg-call" />
+  <text x="485" y="905" class="msg-label">4.1: findByRawKey(rawKey)</text>
+
+  <!-- 4.2 Service -> Crypto & Repo -->
+  <line x1="685" y1="920" x2="865" y2="920" class="msg-call" />
+  <text x="695" y="915" class="msg-label">4.2: computeSha256(rawKey)</text>
+  <line x1="865" y1="935" x2="685" y2="935" class="msg-return" />
+  
+  <line x1="685" y1="945" x2="1035" y2="945" class="msg-call" />
+  <text x="695" y="940" class="msg-label">4.3: findByKeyHash(hash)</text>
+  <line x1="1035" y1="965" x2="685" y2="965" class="msg-return" />
+  <text x="730" y="960" class="return-label">apiKey(active = false)</text>
+
+  <!-- 4.4 Service -> Filter -->
+  <line x1="675" y1="980" x2="475" y2="980" class="msg-return" />
+  <text x="495" y="975" class="return-label">Optional.of(apiKey) [active == false]</text>
+
+  <!-- 4.5 Filter -> Client (Rechazo inmediato 401) -->
+  <line x1="465" y1="1025" x2="95" y2="1025" class="msg-return" />
+  <text x="105" y="1020" class="return-label">401 Unauthorized {"status": 401, "title": "Autenticación fallida", "userMessage": "Clave revocada"}</text>
+
+</svg>
