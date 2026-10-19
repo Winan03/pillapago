@@ -7,6 +7,7 @@ import com.pillapago.shared.crypto.ApiKeyCryptoService;
 import com.pillapago.shared.security.JwtService;
 import com.pillapago.tenant.domain.*;
 import com.pillapago.tenant.dto.CreateApiKeyRequest;
+import com.pillapago.auth.repository.RefreshTokenRepository;
 import com.pillapago.tenant.repository.ApiKeyRepository;
 import com.pillapago.tenant.repository.MerchantRepository;
 import com.pillapago.tenant.repository.UserRepository;
@@ -76,6 +77,9 @@ public class ApiKeyAcceptanceCriteriaValidationTest {
     private ApiKeyRepository apiKeyRepository;
 
     @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
+
+    @Autowired
     private ApiKeyCryptoService cryptoService;
 
     @Autowired
@@ -93,7 +97,9 @@ public class ApiKeyAcceptanceCriteriaValidationTest {
 
     @BeforeEach
     void setUp() {
+        // Limpieza en orden inverso de dependencias FK (apiKeys → refreshTokens → users → merchants)
         apiKeyRepository.deleteAll();
+        refreshTokenRepository.deleteAll();
         userRepository.deleteAll();
         merchantRepository.deleteAll();
 
