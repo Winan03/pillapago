@@ -32,4 +32,16 @@ public class SecuredTestController {
     public ResponseEntity<Map<String, String>> auditorEndpoint() {
         return ResponseEntity.ok(Map.of("message", "Acceso concedido a AUDITOR"));
     }
+
+    @GetMapping("/api-key-secured")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Map<String, Object>> apiKeySecuredEndpoint(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.pillapago.shared.security.UserPrincipal principal
+    ) {
+        return ResponseEntity.ok(Map.of(
+                "message", "Autenticación exitosa mediante API Key",
+                "merchantId", principal.getMerchantId() != null ? principal.getMerchantId().toString() : "null",
+                "status", "ACTIVE"
+        ));
+    }
 }

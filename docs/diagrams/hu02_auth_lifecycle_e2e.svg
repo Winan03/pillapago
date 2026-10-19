@@ -1,0 +1,237 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1150 1120" width="100%" height="100%">
+  <defs>
+    <style>
+      .bg { fill: #ffffff; }
+      .uml-title { fill: #1e293b; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 19px; font-weight: 700; }
+      .uml-subtitle { fill: #64748b; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 13px; }
+      
+      .lifeline-line { stroke: #0284c7; stroke-width: 1.5; stroke-dasharray: 6 5; }
+      
+      .participant-box { fill: #f0f9ff; stroke: #0284c7; stroke-width: 1.5; rx: 4; }
+      .participant-name { fill: #0f172a; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 13px; font-weight: 600; text-anchor: middle; }
+      .participant-type { fill: #0369a1; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 11px; text-anchor: middle; }
+      
+      .actor-icon { stroke: #0284c7; stroke-width: 1.8; fill: none; stroke-linecap: round; }
+      
+      .activation-bar { fill: #e0f2fe; stroke: #0284c7; stroke-width: 1.5; }
+      .activation-bar-sub { fill: #bae6fd; stroke: #0284c7; stroke-width: 1.5; }
+      
+      .msg-call { stroke: #0f172a; stroke-width: 1.5; marker-end: url(#arrow-sync); }
+      .msg-return { stroke: #64748b; stroke-width: 1.5; stroke-dasharray: 5 4; marker-end: url(#arrow-reply); }
+      
+      .msg-label { fill: #0f172a; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 11.5px; font-weight: 500; }
+      .return-label { fill: #475569; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 11px; font-weight: 500; font-style: italic; }
+      
+      .fragment-box { fill: none; stroke: #94a3b8; stroke-width: 1.2; stroke-dasharray: 4 2; }
+      .fragment-header { fill: #e2e8f0; stroke: #94a3b8; stroke-width: 1.2; }
+      .fragment-label { fill: #334155; font-family: ui-monospace, monospace; font-size: 11px; font-weight: 700; }
+    </style>
+    
+    <marker id="arrow-sync" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#0f172a" />
+    </marker>
+    <marker id="arrow-reply" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#64748b" />
+    </marker>
+  </defs>
+
+  <rect width="1150" height="1120" class="bg" />
+
+  <!-- Diagram Title -->
+  <text x="50" y="38" class="uml-title">Diagrama de Secuencia UML: HU-02 Autenticación y Cierre de Sesión</text>
+  <text x="50" y="58" class="uml-subtitle">Interacción entre Usuario, SPA React, AuthController, Spring Security, Bucket4j y Repositorios</text>
+
+  <!-- PARTICIPANTS -->
+  <!-- 1. Actor: Usuario (X = 90) -->
+  <circle cx="90" cy="92" r="10" class="actor-icon" />
+  <line x1="90" y1="102" x2="90" y2="122" class="actor-icon" />
+  <line x1="74" y1="110" x2="106" y2="110" class="actor-icon" />
+  <line x1="90" y1="122" x2="78" y2="140" class="actor-icon" />
+  <line x1="90" y1="122" x2="102" y2="140" class="actor-icon" />
+  <text x="90" y="156" class="participant-name">Usuario</text>
+  <text x="90" y="170" class="participant-type">&lt;&lt;actor&gt;&gt;</text>
+  <line x1="90" y1="178" x2="90" y2="1080" class="lifeline-line" />
+
+  <!-- 2. UI: React Client (X = 250) -->
+  <rect x="180" y="122" width="140" height="46" class="participant-box" />
+  <text x="250" y="142" class="participant-name">tokenStore (SPA)</text>
+  <text x="250" y="157" class="participant-type">&lt;&lt;in-memory client&gt;&gt;</text>
+  <line x1="250" y1="168" x2="250" y2="1080" class="lifeline-line" />
+
+  <!-- 3. Controller: AuthController (X = 450) -->
+  <rect x="375" y="122" width="150" height="46" class="participant-box" />
+  <text x="450" y="142" class="participant-name">AuthController</text>
+  <text x="450" y="157" class="participant-type">&lt;&lt;boundary&gt;&gt;</text>
+  <line x1="450" y1="168" x2="450" y2="1080" class="lifeline-line" />
+
+  <!-- 4. Service: AuthService (X = 660) -->
+  <rect x="590" y="122" width="140" height="46" class="participant-box" />
+  <text x="660" y="142" class="participant-name">AuthService</text>
+  <text x="660" y="157" class="participant-type">&lt;&lt;control&gt;&gt;</text>
+  <line x1="660" y1="168" x2="660" y2="1080" class="lifeline-line" />
+
+  <!-- 5. Security & RateLimit (X = 860) -->
+  <rect x="790" y="122" width="140" height="46" class="participant-box" />
+  <text x="860" y="142" class="participant-name">RateLimiter/JWT</text>
+  <text x="860" y="157" class="participant-type">&lt;&lt;security filter&gt;&gt;</text>
+  <line x1="860" y1="168" x2="860" y2="1080" class="lifeline-line" />
+
+  <!-- 6. Database: Repositories (X = 1040) -->
+  <rect x="975" y="122" width="130" height="46" class="participant-box" />
+  <text x="1040" y="142" class="participant-name">AuthDatabase</text>
+  <text x="1040" y="157" class="participant-type">&lt;&lt;entity / db&gt;&gt;</text>
+  <line x1="1040" y1="168" x2="1040" y2="1080" class="lifeline-line" />
+
+
+  <!-- SCENARIO 1: LOGIN EXITOSO -->
+  <rect x="40" y="195" width="1070" height="260" class="fragment-box" />
+  <path d="M 40 195 L 140 195 L 150 210 L 40 210 Z" class="fragment-header" />
+  <text x="50" y="206" class="fragment-label">opt: Login Exitoso</text>
+
+  <rect x="85" y="215" width="10" height="225" class="activation-bar" />
+  <rect x="245" y="222" width="10" height="210" class="activation-bar" />
+  <rect x="445" y="235" width="10" height="185" class="activation-bar" />
+  <rect x="655" y="248" width="10" height="160" class="activation-bar" />
+  <rect x="855" y="295" width="10" height="55" class="activation-bar-sub" />
+  <rect x="1035" y="260" width="10" height="110" class="activation-bar-sub" />
+
+  <!-- 1.0 Usuario -> React SPA -->
+  <line x1="95" y1="222" x2="245" y2="222" class="msg-call" />
+  <text x="105" y="217" class="msg-label">1.0: submitLoginForm(email, password)</text>
+
+  <!-- 1.1 React SPA -> AuthController -->
+  <line x1="255" y1="235" x2="445" y2="235" class="msg-call" />
+  <text x="265" y="230" class="msg-label">1.1: POST /v1/auth/login (LoginRequest)</text>
+
+  <!-- 1.2 AuthController -> AuthService -->
+  <line x1="455" y1="248" x2="655" y2="248" class="msg-call" />
+  <text x="465" y="243" class="msg-label">1.2: login(request, clientIp)</text>
+
+  <!-- 1.3 AuthService -> DB (find user) -->
+  <line x1="665" y1="260" x2="1035" y2="260" class="msg-call" />
+  <text x="675" y="255" class="msg-label">1.3: findByEmailHash(hash(email))</text>
+  <line x1="1035" y1="285" x2="665" y2="285" class="msg-return" />
+  <text x="735" y="280" class="return-label">user(passwordHash [BCrypt cost 12])</text>
+
+  <!-- 1.4 AuthService -> RateLimiter & JWT -->
+  <line x1="665" y1="300" x2="855" y2="300" class="msg-call" />
+  <text x="675" y="295" class="msg-label">1.4: generateAccessToken(user) [900s] + generateRefreshToken()</text>
+  <line x1="855" y1="325" x2="665" y2="325" class="msg-return" />
+  <text x="690" y="320" class="return-label">accessToken, rawRefreshToken ("rt_...")</text>
+
+  <!-- 1.5 AuthService -> DB (save refresh token) -->
+  <line x1="665" y1="345" x2="1035" y2="345" class="msg-call" />
+  <text x="675" y="340" class="msg-label">1.5: save(RefreshToken(user, SHA256(rawRefreshToken)))</text>
+  <line x1="1035" y1="370" x2="665" y2="370" class="msg-return" />
+
+  <!-- 1.6 Return to Controller -->
+  <line x1="655" y1="395" x2="455" y2="395" class="msg-return" />
+  <text x="480" y="390" class="return-label">LoginResponse(accessToken, refreshToken, user)</text>
+
+  <!-- 1.7 Return to React SPA -->
+  <line x1="445" y1="412" x2="255" y2="412" class="msg-return" />
+  <text x="270" y="407" class="return-label">200 OK {"accessToken": "...", "refreshToken": "..."}</text>
+
+  <!-- 1.8 React SPA stores in memory -->
+  <line x1="255" y1="428" x2="95" y2="428" class="msg-return" />
+  <text x="105" y="423" class="return-label">setInMemoryToken(jwt) [0 localStorage / 0 sessionStorage]</text>
+
+
+  <!-- SCENARIO 2: ACCESO PROTEGIDO Y RBAC -->
+  <rect x="40" y="475" width="1070" height="175" class="fragment-box" />
+  <path d="M 40 475 L 180 475 L 190 490 L 40 490 Z" class="fragment-header" />
+  <text x="50" y="486" class="fragment-label">alt: Control de Acceso RBAC</text>
+
+  <rect x="85" y="495" width="10" height="140" class="activation-bar" />
+  <rect x="245" y="500" width="10" height="125" class="activation-bar" />
+  <rect x="445" y="515" width="10" height="95" class="activation-bar" />
+  <rect x="855" y="525" width="10" height="50" class="activation-bar-sub" />
+
+  <!-- 2.0 Call with Bearer -->
+  <line x1="95" y1="505" x2="245" y2="505" class="msg-call" />
+  <text x="105" y="500" class="msg-label">2.0: requestProtectedResource()</text>
+
+  <line x1="255" y1="515" x2="445" y2="515" class="msg-call" />
+  <text x="265" y="510" class="msg-label">2.1: GET /v1/test/admin-only [Header: Authorization: Bearer &lt;jwt&gt;]</text>
+
+  <line x1="455" y1="525" x2="855" y2="525" class="msg-call" />
+  <text x="465" y="520" class="msg-label">2.2: JwtAuthFilter.validateToken(jwt) -&gt; UserPrincipal(role: RISK_ANALYST)</text>
+
+  <line x1="855" y1="555" x2="455" y2="555" class="msg-return" />
+  <text x="510" y="550" class="return-label">SecurityContextHolder.setAuthentication(principal)</text>
+
+  <!-- 2.3 RBAC Check Rejection -->
+  <line x1="445" y1="585" x2="255" y2="585" class="msg-return" />
+  <text x="270" y="580" class="return-label">403 Forbidden [@PreAuthorize("hasRole('MERCHANT_ADMIN')") falló]</text>
+
+  <line x1="245" y1="610" x2="95" y2="610" class="msg-return" />
+  <text x="105" y="605" class="return-label">Notificación UI: "No tienes permisos de Administrador para realizar esta acción"</text>
+
+
+  <!-- SCENARIO 3: FUERZA BRUTA Y RATE LIMITING -->
+  <rect x="40" y="670" width="1070" height="195" class="fragment-box" />
+  <path d="M 40 670 L 205 670 L 215 685 L 40 685 Z" class="fragment-header" />
+  <text x="50" y="681" class="fragment-label">alt: Mitigación Fuerza Bruta</text>
+
+  <rect x="85" y="690" width="10" height="160" class="activation-bar" />
+  <rect x="445" y="695" width="10" height="145" class="activation-bar" />
+  <rect x="655" y="705" width="10" height="125" class="activation-bar" />
+  <rect x="855" y="715" width="10" height="105" class="activation-bar-sub" />
+
+  <!-- 3.0 5 Failed attempts -->
+  <line x1="95" y1="700" x2="445" y2="700" class="msg-call" />
+  <text x="105" y="695" class="msg-label">3.0: 5 peticiones consecutivas POST /v1/auth/login con credenciales erróneas</text>
+
+  <line x1="455" y1="715" x2="655" y2="715" class="msg-call" />
+  <text x="465" y="710" class="msg-label">3.1: recordFailedAttempt(clientIp)</text>
+
+  <line x1="665" y1="730" x2="855" y2="730" class="msg-call" />
+  <text x="675" y="725" class="msg-label">3.2: Bucket4j.consume(1) -&gt; Tokens agotados (5/5)</text>
+  <line x1="855" y1="755" x2="655" y2="755" class="msg-return" />
+  <text x="685" y="750" class="return-label">Lock IP for 15 minutes</text>
+
+  <!-- 3.3 6th Attempt Blocked -->
+  <line x1="95" y1="780" x2="445" y2="780" class="msg-call" />
+  <text x="105" y="775" class="msg-label">3.3: 6to intento POST /v1/auth/login</text>
+
+  <line x1="445" y1="815" x2="95" y2="815" class="msg-return" />
+  <text x="105" y="810" class="return-label">429 Too Many Requests [Header: Retry-After: 900, userMessage: "Acceso bloqueado por 15 min"]</text>
+
+
+  <!-- SCENARIO 4: LOGOUT SEGURO -->
+  <rect x="40" y="885" width="1070" height="175" class="fragment-box" />
+  <path d="M 40 885 L 140 885 L 150 900 L 40 900 Z" class="fragment-header" />
+  <text x="50" y="896" class="fragment-label">opt: Logout</text>
+
+  <rect x="85" y="905" width="10" height="140" class="activation-bar" />
+  <rect x="245" y="910" width="10" height="125" class="activation-bar" />
+  <rect x="445" y="920" width="10" height="105" class="activation-bar" />
+  <rect x="655" y="930" width="10" height="85" class="activation-bar" />
+  <rect x="1035" y="945" width="10" height="45" class="activation-bar-sub" />
+
+  <!-- 4.0 Logout call -->
+  <line x1="95" y1="915" x2="245" y2="915" class="msg-call" />
+  <text x="105" y="910" class="msg-label">4.0: logout()</text>
+
+  <line x1="255" y1="925" x2="445" y2="925" class="msg-call" />
+  <text x="265" y="920" class="msg-label">4.1: POST /v1/auth/logout {"refreshToken": "rt_..."}</text>
+
+  <line x1="455" y1="935" x2="655" y2="935" class="msg-call" />
+  <text x="465" y="930" class="msg-label">4.2: logout(request, currentUser)</text>
+
+  <!-- 4.3 Invalidate in DB -->
+  <line x1="665" y1="945" x2="1035" y2="945" class="msg-call" />
+  <text x="675" y="940" class="msg-label">4.3: revokeRefreshToken(SHA256(rt))</text>
+  <line x1="1035" y1="975" x2="665" y2="975" class="msg-return" />
+  <text x="760" y="970" class="return-label">UPDATE revoked = true</text>
+
+  <line x1="655" y1="995" x2="445" y2="995" class="msg-return" />
+  <text x="480" y="990" class="return-label">MessageResponse("Sesión cerrada")</text>
+
+  <line x1="445" y1="1010" x2="255" y2="1010" class="msg-return" />
+  <text x="270" y="1005" class="return-label">200 OK {"message": "Sesión cerrada exitosamente"}</text>
+
+  <line x1="255" y1="1025" x2="95" y2="1025" class="msg-return" />
+  <text x="105" y="1020" class="return-label">clearInMemoryToken() [Sesión terminada]</text>
+
+</svg>

@@ -56,6 +56,21 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(problem, headers, HttpStatus.TOO_MANY_REQUESTS);
     }
 
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleResourceNotFound(ResourceNotFoundException ex, HttpServletRequest request) {
+        Map<String, Object> problem = Map.of(
+                "type", "https://pillapago.dev/errors/not-found",
+                "title", "Recurso no encontrado",
+                "status", HttpStatus.NOT_FOUND.value(),
+                "detail", ex.getMessage(),
+                "userMessage", ex.getUserMessage() != null ? ex.getUserMessage() : ex.getMessage(),
+                "instance", request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem);
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
         Map<String, Object> problem = Map.of(
@@ -63,6 +78,7 @@ public class GlobalExceptionHandler {
                 "title", "Acceso prohibido",
                 "status", HttpStatus.FORBIDDEN.value(),
                 "detail", "No cuenta con los permisos necesarios para realizar esta acción",
+                "userMessage", "No tienes permisos de Administrador para realizar esta acción en tu comercio.",
                 "instance", request.getRequestURI()
         );
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
@@ -82,6 +98,7 @@ public class GlobalExceptionHandler {
                 "title", "Datos inválidos",
                 "status", HttpStatus.BAD_REQUEST.value(),
                 "detail", "La solicitud contiene campos inválidos",
+                "userMessage", "Revisa los datos del formulario antes de continuar.",
                 "instance", request.getRequestURI(),
                 "invalidParams", errors
         );
