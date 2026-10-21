@@ -122,6 +122,21 @@ public class GlobalExceptionHandler {
                 .body(problem);
     }
 
+    @ExceptionHandler(com.pillapago.rules.exception.InvalidRuleConditionException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidRuleCondition(com.pillapago.rules.exception.InvalidRuleConditionException ex, HttpServletRequest request) {
+        Map<String, Object> problem = Map.of(
+                "type", "https://pillapago.dev/errors/invalid-rule-condition",
+                "title", "Condición de regla inválida",
+                "status", HttpStatus.BAD_REQUEST.value(),
+                "detail", ex.getMessage(),
+                "userMessage", ex.getMessage(),
+                "instance", request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem);
+    }
+
     @ExceptionHandler(RedisUnavailableException.class)
     public ResponseEntity<Map<String, Object>> handleRedisUnavailable(RedisUnavailableException ex, HttpServletRequest request) {
         Map<String, Object> problem = Map.of(
