@@ -13,6 +13,17 @@ spring:
     hikari:
       maximum-pool-size: 10
       auto-commit: false
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:redis_pass}
+      timeout: 200ms
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
   jpa:
     hibernate:
       ddl-auto: none

@@ -106,4 +106,34 @@ public class GlobalExceptionHandler {
                 .contentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .body(problem);
     }
+
+    @ExceptionHandler(IdempotencyConflictException.class)
+    public ResponseEntity<Map<String, Object>> handleIdempotencyConflict(IdempotencyConflictException ex, HttpServletRequest request) {
+        Map<String, Object> problem = Map.of(
+                "type", "https://pillapago.dev/errors/idempotency-conflict",
+                "title", "Conflicto de Idempotencia",
+                "status", HttpStatus.CONFLICT.value(),
+                "detail", ex.getMessage(),
+                "userMessage", ex.getUserMessage() != null ? ex.getUserMessage() : "El identificador de transaccion ya fue utilizado con datos diferentes.",
+                "instance", request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem);
+    }
+
+    @ExceptionHandler(RedisUnavailableException.class)
+    public ResponseEntity<Map<String, Object>> handleRedisUnavailable(RedisUnavailableException ex, HttpServletRequest request) {
+        Map<String, Object> problem = Map.of(
+                "type", "https://pillapago.dev/errors/service-unavailable",
+                "title", "Servicio temporalmente no disponible",
+                "status", HttpStatus.SERVICE_UNAVAILABLE.value(),
+                "detail", ex.getMessage(),
+                "userMessage", "El servicio de evaluacion en memoria esta experimentando interrupciones. Por favor reintente en breve.",
+                "instance", request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem);
+    }
 }

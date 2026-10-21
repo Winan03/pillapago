@@ -1,0 +1,224 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1150" width="100%" height="100%">
+  <defs>
+    <style>
+      .bg { fill: #ffffff; }
+      .uml-title { fill: #1e293b; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 19px; font-weight: 700; }
+      .uml-subtitle { fill: #64748b; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 13px; }
+      
+      /* Lifelines */
+      .lifeline-line { stroke: #0284c7; stroke-width: 1.5; stroke-dasharray: 6 5; }
+      
+      /* Participant boxes */
+      .participant-box { fill: #f0f9ff; stroke: #0284c7; stroke-width: 1.5; rx: 4; }
+      .participant-name { fill: #0f172a; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 12.5px; font-weight: 600; text-anchor: middle; }
+      .participant-type { fill: #0369a1; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 10.5px; text-anchor: middle; }
+      
+      /* Actor Stick Figure */
+      .actor-icon { stroke: #0284c7; stroke-width: 1.8; fill: none; stroke-linecap: round; }
+      
+      /* Activation Bars */
+      .activation-bar { fill: #e0f2fe; stroke: #0284c7; stroke-width: 1.5; }
+      .activation-bar-sub { fill: #bae6fd; stroke: #0284c7; stroke-width: 1.5; }
+      
+      /* Message Lines */
+      .msg-call { stroke: #0f172a; stroke-width: 1.5; marker-end: url(#arrow-sync); }
+      .msg-return { stroke: #64748b; stroke-width: 1.5; stroke-dasharray: 5 4; marker-end: url(#arrow-reply); }
+      .msg-self { stroke: #0f172a; stroke-width: 1.5; fill: none; marker-end: url(#arrow-sync); }
+      
+      /* Labels */
+      .msg-label { fill: #0f172a; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 11.5px; font-weight: 500; }
+      .return-label { fill: #475569; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 11px; font-weight: 500; font-style: italic; }
+      
+      /* Fragment Boxes (alt, opt, group) */
+      .fragment-box { fill: none; stroke: #94a3b8; stroke-width: 1.2; stroke-dasharray: 4 2; }
+      .fragment-header { fill: #e2e8f0; stroke: #94a3b8; stroke-width: 1.2; }
+      .fragment-label { fill: #334155; font-family: ui-monospace, monospace; font-size: 11px; font-weight: 700; }
+      .fragment-divider { stroke: #94a3b8; stroke-width: 1; stroke-dasharray: 3 3; }
+      .fragment-guard { fill: #475569; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 10.5px; font-weight: 600; }
+    </style>
+    
+    <marker id="arrow-sync" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#0f172a" />
+    </marker>
+    <marker id="arrow-reply" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#64748b" />
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="100%" height="100%" class="bg" />
+
+  <!-- Diagram Headers -->
+  <text x="50" y="45" class="uml-title">UML Sequence: HU-06b Velocity e Idempotencia en Redis (Hot Path E2E)</text>
+  <text x="50" y="68" class="uml-subtitle">Aislamiento Multi-Tenant (t:{mId}:...), Seudonimización Criptográfica RNF-32 (HMAC), Atomicidad Lua y Manejo 409</text>
+
+  <!-- Lifeline X Coordinates:
+       1. Cliente API: 90
+       2. Controller / Evaluator: 290
+       3. RedisIdempotencyService: 510
+       4. HmacIndexService: 720
+       5. RedisVelocityService: 910
+       6. Redis Server (Lua): 1100
+  -->
+
+  <!-- Lifeline Lines -->
+  <line x1="90" y1="140" x2="90" y2="1080" class="lifeline-line" />
+  <line x1="290" y1="140" x2="290" y2="1080" class="lifeline-line" />
+  <line x1="510" y1="140" x2="510" y2="1080" class="lifeline-line" />
+  <line x1="720" y1="140" x2="720" y2="1080" class="lifeline-line" />
+  <line x1="910" y1="140" x2="910" y2="1080" class="lifeline-line" />
+  <line x1="1100" y1="140" x2="1100" y2="1080" class="lifeline-line" />
+
+  <!-- Lifeline Headers -->
+  <!-- 1. Actor Stick Figure -->
+  <circle cx="90" cy="98" r="9" class="actor-icon" />
+  <line x1="90" y1="107" x2="90" y2="123" class="actor-icon" />
+  <line x1="78" y1="113" x2="102" y2="113" class="actor-icon" />
+  <line x1="90" y1="123" x2="80" y2="136" class="actor-icon" />
+  <line x1="90" y1="123" x2="100" y2="136" class="actor-icon" />
+  <text x="90" y="152" class="participant-name">Cliente API</text>
+  <text x="90" y="165" class="participant-type">&lt;&lt;Actor / Checkout&gt;&gt;</text>
+
+  <!-- 2. Controller / Evaluator -->
+  <rect x="210" y="95" width="160" height="42" class="participant-box" />
+  <text x="290" y="113" class="participant-name">EvaluationController</text>
+  <text x="290" y="127" class="participant-type">&lt;&lt;Spring RestController&gt;&gt;</text>
+
+  <!-- 3. RedisIdempotencyService -->
+  <rect x="425" y="95" width="170" height="42" class="participant-box" />
+  <text x="510" y="113" class="participant-name">RedisIdempotencyService</text>
+  <text x="510" y="127" class="participant-type">&lt;&lt;Service (RF-08)&gt;&gt;</text>
+
+  <!-- 4. HmacIndexService -->
+  <rect x="645" y="95" width="150" height="42" class="participant-box" />
+  <text x="720" y="113" class="participant-name">HmacIndexService</text>
+  <text x="720" y="127" class="participant-type">&lt;&lt;Crypto (RNF-32)&gt;&gt;</text>
+
+  <!-- 5. RedisVelocityService -->
+  <rect x="830" y="95" width="160" height="42" class="participant-box" />
+  <text x="910" y="113" class="participant-name">RedisVelocityService</text>
+  <text x="910" y="127" class="participant-type">&lt;&lt;Service (Velocity ZSET)&gt;&gt;</text>
+
+  <!-- 6. Redis Server -->
+  <rect x="1025" y="95" width="150" height="42" class="participant-box" />
+  <text x="1100" y="113" class="participant-name">Redis Server</text>
+  <text x="1100" y="127" class="participant-type">&lt;&lt;In-Memory (Lua Engine)&gt;&gt;</text>
+
+  <!-- Activations -->
+  <rect x="85" y="190" width="10" height="860" class="activation-bar" />
+  <rect x="285" y="190" width="10" height="850" class="activation-bar" />
+
+  <!-- Step 1: POST Evaluation Request -->
+  <line x1="95" y1="200" x2="285" y2="200" class="msg-call" />
+  <text x="105" y="195" class="msg-label">1. POST /v1/evaluations (txnId, payload, deviceId="DEV-01", accountId="ACC-99")</text>
+
+  <!-- Step 2: Idempotency Check -->
+  <rect x="505" y="215" width="10" height="230" class="activation-bar" />
+  <line x1="295" y1="220" x2="505" y2="220" class="msg-call" />
+  <text x="305" y="215" class="msg-label">2. processIdempotency(merchantId, txnId, canonicalPayload)</text>
+
+  <!-- Step 3: Payload Hash -->
+  <rect x="715" y="230" width="10" height="30" class="activation-bar-sub" />
+  <line x1="515" y1="235" x2="715" y2="235" class="msg-call" />
+  <text x="525" y="230" class="msg-label">3. computeSha256(canonicalPayload)</text>
+  <line x1="715" y1="255" x2="515" y2="255" class="msg-return" />
+  <text x="525" y="250" class="return-label">payloadHash (SHA-256 Hex 64c)</text>
+
+  <!-- Step 4: Atomic Lua Idempotency check -->
+  <rect x="1095" y="265" width="10" height="40" class="activation-bar" />
+  <line x1="515" y1="270" x2="1095" y2="270" class="msg-call" />
+  <text x="525" y="265" class="msg-label">4. EVAL idempotency_check_and_reserve.lua (KEY: t:{mId}:idemp:{txnId}, payloadHash)</text>
+  <line x1="1095" y1="295" x2="515" y2="295" class="msg-return" />
+  <text x="525" y="290" class="return-label">"ACQUIRED" | "COMPLETED:&lt;cachedJson&gt;" | "CONFLICT"</text>
+
+  <!-- Fragment ALT: Idempotency Decisions -->
+  <rect x="250" y="315" width="880" height="155" class="fragment-box" />
+  <path d="M 250 315 L 290 315 L 298 327 L 250 327 Z" class="fragment-header" />
+  <text x="256" y="324" class="fragment-label">alt</text>
+
+  <!-- Case 1: CONFLICT -->
+  <text x="310" y="325" class="fragment-guard">[scriptResult == "CONFLICT"] (Mismo txnId pero diferente payload)</text>
+  <line x1="505" y1="345" x2="295" y2="345" class="msg-return" />
+  <text x="310" y="340" class="return-label">throws IdempotencyConflictException</text>
+  <line x1="285" y1="365" x2="95" y2="365" class="msg-return" />
+  <text x="105" y="360" class="return-label" style="fill: #dc2626; font-weight: 600;">HTTP 409 Conflict (Problem Details RFC 7807)</text>
+
+  <!-- Divider -->
+  <line x1="250" y1="380" x2="1130" y2="380" class="fragment-divider" />
+
+  <!-- Case 2: COMPLETED (Cache Hit) -->
+  <text x="310" y="395" class="fragment-guard">[scriptResult == "COMPLETED:&lt;json&gt;"] (Reintento con payload idéntico)</text>
+  <line x1="505" y1="415" x2="295" y2="415" class="msg-return" />
+  <text x="310" y="410" class="return-label">IdempotencyResult.completed(cachedResponseJson)</text>
+  <line x1="285" y1="440" x2="95" y2="440" class="msg-return" />
+  <text x="105" y="435" class="return-label" style="fill: #16a34a; font-weight: 600;">HTTP 200 OK (Cache Hit previo, sin re-evaluar)</text>
+
+  <!-- Continue: ACQUIRED flow -->
+  <!-- Step 5: Blind Index calculation (RNF-32) -->
+  <rect x="715" y="490" width="10" height="90" class="activation-bar" />
+  <line x1="295" y1="495" x2="715" y2="495" class="msg-call" />
+  <text x="305" y="490" class="msg-label">5. computeBlindIndex(merchantId, "DEV-01")</text>
+  <line x1="715" y1="520" x2="295" y2="520" class="msg-return" />
+  <text x="305" y="515" class="return-label">hmacDevice (HMAC-SHA256 Hex 64c - Cero texto plano en Redis)</text>
+
+  <line x1="295" y1="540" x2="715" y2="540" class="msg-call" />
+  <text x="305" y="535" class="msg-label">6. computeBlindIndex(merchantId, "ACC-99")</text>
+  <line x1="715" y1="565" x2="295" y2="565" class="msg-return" />
+  <text x="305" y="560" class="return-label">hmacAccount (HMAC-SHA256 Hex 64c)</text>
+
+  <!-- Step 6: Velocity Frequency Calculation -->
+  <rect x="905" y="590" width="10" height="160" class="activation-bar" />
+  <line x1="295" y1="595" x2="905" y2="595" class="msg-call" />
+  <text x="305" y="590" class="msg-label">7. recordAndGetFrequency(merchantId, "device_txns", "DEV-01", 600s, txnId, nowMs)</text>
+
+  <!-- Lua sliding window frequency -->
+  <rect x="1095" y="615" width="10" height="40" class="activation-bar" />
+  <line x1="915" y1="620" x2="1095" y2="620" class="msg-call" />
+  <text x="925" y="615" class="msg-label">8. EVAL sliding_window_frequency.lua (ZREMRANGEBYSCORE + ZADD + ZCARD)</text>
+  <line x1="1095" y1="645" x2="915" y2="645" class="msg-return" />
+  <text x="925" y="640" class="return-label">frequencyCount (ej: 3)</text>
+  <line x1="905" y1="665" x2="295" y2="665" class="msg-return" />
+  <text x="305" y="660" class="return-label">frequencyCount = 3</text>
+
+  <!-- Step 7: Distinct Accounts Calculation -->
+  <line x1="295" y1="685" x2="905" y2="685" class="msg-call" />
+  <text x="305" y="680" class="msg-label">9. recordAndGetDistinctCount(merchantId, "device_accounts", "DEV-01", "ACC-99", 86400s)</text>
+
+  <rect x="1095" y="700" width="10" height="40" class="activation-bar" />
+  <line x1="915" y1="705" x2="1095" y2="705" class="msg-call" />
+  <text x="925" y="700" class="msg-label">10. EVAL sliding_window_distinct.lua (ZADD score=now + ZREMRANGE + ZCARD)</text>
+  <line x1="1095" y1="730" x2="915" y2="730" class="msg-return" />
+  <text x="925" y="725" class="return-label">distinctCount (ej: 2 cuentas en 24h)</text>
+  <line x1="905" y1="745" x2="295" y2="745" class="msg-return" />
+  <text x="305" y="740" class="return-label">distinctCount = 2</text>
+
+  <!-- Step 8: Rule Evaluation in Memory -->
+  <rect x="295" y="765" width="20" height="40" class="activation-bar-sub" />
+  <path d="M 295 770 L 330 770 L 330 790 L 305 790" class="msg-self" />
+  <text x="335" y="785" class="msg-label">11. Evaluar Reglas en Memoria (HU-06a) con métricas de Velocity calculadas</text>
+
+  <!-- Step 9: Mark Idempotency as COMPLETED -->
+  <rect x="505" y="825" width="10" height="50" class="activation-bar" />
+  <line x1="295" y1="830" x2="505" y2="830" class="msg-call" />
+  <text x="305" y="825" class="msg-label">12. markCompleted(merchantId, txnId, responseJson, TTL=86400s)</text>
+
+  <rect x="1095" y="840" width="10" height="30" class="activation-bar" />
+  <line x1="515" y1="845" x2="1095" y2="845" class="msg-call" />
+  <text x="525" y="840" class="msg-label">13. HSET status="COMPLETED" responseJson="..." + EXPIRE 86400</text>
+  <line x1="1095" y1="860" x2="515" y2="860" class="msg-return" />
+  <text x="525" y="855" class="return-label">OK</text>
+  <line x1="505" y1="870" x2="295" y2="870" class="msg-return" />
+  <text x="305" y="865" class="return-label">void</text>
+
+  <!-- Step 10: Final HTTP Response -->
+  <line x1="285" y1="900" x2="95" y2="900" class="msg-return" />
+  <text x="105" y="895" class="return-label" style="fill: #16a34a; font-weight: 600;">14. HTTP 200 OK: {"decision":"APPROVE","score":25,"velocity":{"device_txns":3,"distinct_accounts":2}}</text>
+
+  <!-- Group / Box: Fallback / Tolerance -->
+  <rect x="250" y="930" width="880" height="90" class="fragment-box" style="stroke: #e11d48;" />
+  <path d="M 250 930 L 300 930 L 308 942 L 250 942 Z" class="fragment-header" style="fill: #ffe4e6; stroke: #e11d48;" />
+  <text x="256" y="939" class="fragment-label" style="fill: #be123c;">break</text>
+  <text x="320" y="940" class="fragment-guard">[Redis se cae / connection timeout / RedisException]</text>
+  <text x="310" y="965" class="msg-label" style="fill: #be123c;">Servicio captura fallo -&gt; Lanza RedisUnavailableException(operation)</text>
+  <text x="310" y="985" class="return-label" style="fill: #be123c;">Capa superior intercepta -&gt; Aplica política configurada: FAIL_OPEN (ignora velocity) o FAIL_CLOSED (rechazo preventivo)</text>
+</svg>
