@@ -112,6 +112,18 @@
             <version>8.10.1</version>
         </dependency>
 
+        <!-- Google Tink for Field-Level AEAD Encryption (AES-256-GCM) -->
+        <dependency>
+            <groupId>com.google.crypto.tink</groupId>
+            <artifactId>tink</artifactId>
+            <version>1.15.0</version>
+        </dependency>
+
+        <!-- Caffeine Cache for In-Memory DEK Caching (15 min TTL) -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+        </dependency>
         <!-- Test dependencies -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

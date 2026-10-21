@@ -1,0 +1,254 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 1200" width="100%" height="100%">
+  <defs>
+    <style>
+      .bg { fill: #ffffff; }
+      .uml-title { fill: #0f172a; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 20px; font-weight: 700; }
+      .uml-subtitle { fill: #475569; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 13px; }
+      
+      /* Lifelines */
+      .lifeline-line { stroke: #0284c7; stroke-width: 1.5; stroke-dasharray: 6 5; }
+      
+      /* Participant boxes */
+      .participant-box { fill: #f0f9ff; stroke: #0284c7; stroke-width: 1.5; rx: 5; }
+      .participant-name { fill: #0f172a; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 12.5px; font-weight: 600; text-anchor: middle; }
+      .participant-type { fill: #0369a1; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 10px; text-anchor: middle; }
+      
+      /* Activation Bars */
+      .activation-bar { fill: #e0f2fe; stroke: #0284c7; stroke-width: 1.5; }
+      .activation-bar-err { fill: #fee2e2; stroke: #ef4444; stroke-width: 1.5; }
+      
+      /* Message Lines */
+      .msg-call { stroke: #0f172a; stroke-width: 1.5; marker-end: url(#arrow-sync); }
+      .msg-return { stroke: #64748b; stroke-width: 1.5; stroke-dasharray: 5 4; marker-end: url(#arrow-reply); }
+      .msg-self { stroke: #0f172a; stroke-width: 1.5; fill: none; marker-end: url(#arrow-sync); }
+      .msg-err { stroke: #ef4444; stroke-width: 1.5; marker-end: url(#arrow-err); }
+      
+      /* Labels */
+      .msg-label { fill: #0f172a; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 11px; font-weight: 500; }
+      .msg-label-err { fill: #b91c1c; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 11px; font-weight: 600; }
+      .return-label { fill: #475569; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 10.5px; font-weight: 500; font-style: italic; }
+      
+      /* Fragment Boxes (alt, opt, group) */
+      .fragment-box { fill: none; stroke: #94a3b8; stroke-width: 1.2; stroke-dasharray: 4 2; }
+      .fragment-header { fill: #e2e8f0; stroke: #94a3b8; stroke-width: 1.2; }
+      .fragment-label { fill: #334155; font-family: ui-monospace, monospace; font-size: 11px; font-weight: 700; }
+      .fragment-guard { fill: #475569; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 10px; font-weight: 600; }
+    </style>
+    
+    <marker id="arrow-sync" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#0f172a" />
+    </marker>
+    <marker id="arrow-reply" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#64748b" />
+    </marker>
+    <marker id="arrow-err" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#ef4444" />
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="100%" height="100%" class="bg" />
+
+  <!-- Diagram Headers -->
+  <text x="50" y="45" class="uml-title">UML Sequence: ENC - Cifrado de Campo (Google Tink AES-256-GCM) e Índices Ciegos</text>
+  <text x="50" y="68" class="uml-subtitle">Envelope Encryption (KMS), AAD (merchant:table:col:rowId), Caché Caffeine (15m TTL), HMAC-SHA256 y Crypto-Shredding</text>
+
+  <!-- Lifeline X Coordinates:
+       1. Evaluation (Hot Path): 100
+       2. AsyncFieldEncryption: 270
+       3. FieldEncryptor: 460
+       4. TenantKeyManager: 670
+       5. ClavesPort (KMS): 870
+       6. DB (tenant_keys): 1050
+       7. HmacIndexService: 1210
+  -->
+
+  <!-- Lifelines -->
+  <line x1="100" y1="120" x2="100" y2="1140" class="lifeline-line" />
+  <line x1="270" y1="120" x2="270" y2="1140" class="lifeline-line" />
+  <line x1="460" y1="120" x2="460" y2="1140" class="lifeline-line" />
+  <line x1="670" y1="120" x2="670" y2="1140" class="lifeline-line" />
+  <line x1="870" y1="120" x2="870" y2="1140" class="lifeline-line" />
+  <line x1="1050" y1="120" x2="1050" y2="1140" class="lifeline-line" />
+  <line x1="1210" y1="120" x2="1210" y2="1140" class="lifeline-line" />
+
+  <!-- Participant Headers -->
+  <g transform="translate(40, 80)">
+    <rect width="120" height="40" class="participant-box" />
+    <text x="60" y="18" class="participant-name">EvaluationFlow</text>
+    <text x="60" y="32" class="participant-type">&lt;&lt;Hot Path &lt; 5ms&gt;&gt;</text>
+  </g>
+  <g transform="translate(200, 80)">
+    <rect width="140" height="40" class="participant-box" />
+    <text x="70" y="18" class="participant-name">AsyncCryptoService</text>
+    <text x="70" y="32" class="participant-type">&lt;&lt;@Async Worker&gt;&gt;</text>
+  </g>
+  <g transform="translate(400, 80)">
+    <rect width="120" height="40" class="participant-box" />
+    <text x="60" y="18" class="participant-name">FieldEncryptor</text>
+    <text x="60" y="32" class="participant-type">&lt;&lt;shared/crypto&gt;&gt;</text>
+  </g>
+  <g transform="translate(605, 80)">
+    <rect width="130" height="40" class="participant-box" />
+    <text x="65" y="18" class="participant-name">TenantKeyManager</text>
+    <text x="65" y="32" class="participant-type">&lt;&lt;Caffeine 15m TTL&gt;&gt;</text>
+  </g>
+  <g transform="translate(810, 80)">
+    <rect width="120" height="40" class="participant-box" />
+    <text x="60" y="18" class="participant-name">ClavesPort</text>
+    <text x="60" y="32" class="participant-type">&lt;&lt;KMS Adapter (KEK)&gt;&gt;</text>
+  </g>
+  <g transform="translate(990, 80)">
+    <rect width="120" height="40" class="participant-box" />
+    <text x="60" y="18" class="participant-name">tenant_keys</text>
+    <text x="60" y="32" class="participant-type">&lt;&lt;PostgreSQL DB&gt;&gt;</text>
+  </g>
+  <g transform="translate(1145, 80)">
+    <rect width="130" height="40" class="participant-box" />
+    <text x="65" y="18" class="participant-name">HmacIndexService</text>
+    <text x="65" y="32" class="participant-type">&lt;&lt;Blind Indices&gt;&gt;</text>
+  </g>
+
+  <!-- ========================================== -->
+  <!-- 1. ENVELOPE ENCRYPTION & KEY PROVISIONING   -->
+  <!-- ========================================== -->
+  <g>
+    <!-- Group Box -->
+    <rect x="50" y="140" width="1180" height="190" class="fragment-box" />
+    <rect x="50" y="140" width="220" height="18" class="fragment-header" />
+    <text x="56" y="153" class="fragment-label">opt [Key Provisioning on Cache Miss]</text>
+
+    <!-- Hot path invokes async -->
+    <line x1="100" y1="170" x2="270" y2="170" class="msg-call" />
+    <text x="110" y="165" class="msg-label">encryptStringAsync(mId, PII, table, col, rowId)</text>
+
+    <!-- Async delegates to FieldEncryptor -->
+    <line x1="270" y1="195" x2="460" y2="195" class="msg-call" />
+    <text x="280" y="190" class="msg-label">encryptString(mId, PII, table, col, rowId)</text>
+
+    <!-- Request AEAD primitive from TenantKeyManager -->
+    <line x1="460" y1="220" x2="670" y2="220" class="msg-call" />
+    <text x="470" y="215" class="msg-label">getOrCreateActiveAead(merchantId)</text>
+
+    <!-- Key Manager queries DB -->
+    <line x1="670" y1="245" x2="1050" y2="245" class="msg-call" />
+    <text x="730" y="240" class="msg-label">findByMerchantIdAndActiveTrue(mId)</text>
+
+    <line x1="1050" y1="265" x2="670" y2="265" class="msg-return" />
+    <text x="780" y="260" class="return-label">return TenantKey (encrypted_dek_bytes)</text>
+
+    <!-- Decrypt DEK with KMS KEK -->
+    <line x1="670" y1="290" x2="870" y2="290" class="msg-call" />
+    <text x="690" y="285" class="msg-label">decryptMaster(encryptedDekBytes)</text>
+
+    <line x1="870" y1="310" x2="670" y2="310" class="msg-return" />
+    <text x="710" y="305" class="return-label">return raw Tink KeysetHandle bytes (AES-256-GCM)</text>
+  </g>
+
+  <!-- ========================================== -->
+  <!-- 2. FIELD ENCRYPTION WITH AAD (GCM)         -->
+  <!-- ========================================== -->
+  <g>
+    <!-- Group Box -->
+    <rect x="50" y="350" width="1180" height="230" class="fragment-box" />
+    <rect x="50" y="350" width="280" height="18" class="fragment-header" />
+    <text x="56" y="363" class="fragment-label">group [AEAD Associated Data (AAD) Caching]</text>
+
+    <!-- Return AEAD cached to FieldEncryptor -->
+    <line x1="670" y1="385" x2="460" y2="385" class="msg-return" />
+    <text x="480" y="380" class="return-label">return Aead Primitive (Cached 15 min TTL in Caffeine)</text>
+
+    <!-- Self call AAD build -->
+    <path d="M 460 410 L 490 410 L 490 430 L 460 430" class="msg-self" />
+    <text x="500" y="425" class="msg-label">AssociatedDataBuilder.build(mId:table:col:rowId)</text>
+
+    <!-- Tink AEAD Encrypt -->
+    <path d="M 460 455 L 490 455 L 490 475 L 460 475" class="msg-self" />
+    <text x="500" y="470" class="msg-label">aead.encrypt(plaintext, aad) [AES-256-GCM]</text>
+
+    <!-- Return ciphertext Base64 -->
+    <line x1="460" y1="500" x2="270" y2="500" class="msg-return" />
+    <text x="290" y="495" class="return-label">return Base64(ciphertext + 128-bit GCM Tag)</text>
+
+    <line x1="270" y1="525" x2="100" y2="525" class="msg-return" />
+    <text x="120" y="520" class="return-label">CompletableFuture.complete(ciphertext)</text>
+
+    <!-- Performance note -->
+    <text x="280" y="560" class="msg-label" fill="#0369a1">⚡ Subsequent encryption calls hit Caffeine cache directly (Latency p95 &lt; 5 ms, ~0.05 ms in memory)</text>
+  </g>
+
+  <!-- ========================================== -->
+  <!-- 3. BLIND INDEX SEARCH (HMAC-SHA256)        -->
+  <!-- ========================================== -->
+  <g>
+    <!-- Group Box -->
+    <rect x="50" y="600" width="1180" height="170" class="fragment-box" />
+    <rect x="50" y="600" width="300" height="18" class="fragment-header" />
+    <text x="56" y="613" class="fragment-label">group [Blind Index: Exact Search without Decryption]</text>
+
+    <!-- Evaluator requests blind index -->
+    <line x1="100" y1="640" x2="1210" y2="640" class="msg-call" />
+    <text x="130" y="635" class="msg-label">computeBlindIndex(merchantId, rawCustomerId / IP)</text>
+
+    <!-- HmacIndexService gets blind index key from TenantKeyManager -->
+    <line x1="1210" y1="665" x2="670" y2="665" class="msg-call" />
+    <text x="820" y="660" class="msg-label">getOrCreateActiveBlindIndexKey(merchantId)</text>
+
+    <line x1="670" y1="685" x2="1210" y2="685" class="msg-return" />
+    <text x="850" y="680" class="return-label">return 256-bit blind_index_key (independent of DEK)</text>
+
+    <!-- Compute HMAC-SHA256 -->
+    <path d="M 1210 705 L 1240 705 L 1240 725 L 1210 725" class="msg-self" />
+    <text x="1000" y="720" class="msg-label">HMAC-SHA256(blind_key, lower(rawIdentifier))</text>
+
+    <line x1="1210" y1="745" x2="100" y2="745" class="msg-return" />
+    <text x="350" y="740" class="return-label">return 64-char hex token (Query: SELECT * WHERE customer_blind_idx = :token)</text>
+  </g>
+
+  <!-- ========================================== -->
+  <!-- 4. TAMPERING & TRANSPLANT REJECTION        -->
+  <!-- ========================================== -->
+  <g>
+    <!-- Group Box -->
+    <rect x="50" y="790" width="1180" height="180" class="fragment-box" />
+    <rect x="50" y="790" width="300" height="18" class="fragment-header" />
+    <text x="56" y="803" class="fragment-label">alt [Tampering or Transplant Attempt]</text>
+
+    <!-- Decrypt attempt with modified AAD -->
+    <line x1="100" y1="830" x2="460" y2="830" class="msg-call" />
+    <text x="110" y="825" class="msg-label">decryptString(merchantId, ciphertext, table, different_col / rowId / tenant)</text>
+
+    <path d="M 460 855 L 490 855 L 490 875 L 460 875" class="msg-self" />
+    <text x="500" y="870" class="msg-label">Build AAD -> AAD mismatch detected by AES-GCM Tag</text>
+
+    <path d="M 460 895 L 490 895 L 490 915 L 460 915" class="msg-self" />
+    <text x="500" y="910" class="msg-label-err">aead.decrypt() throws GeneralSecurityException (Tag Mismatch)</text>
+
+    <!-- Return exception -->
+    <line x1="460" y1="945" x2="100" y2="945" class="msg-err" />
+    <text x="120" y="940" class="msg-label-err">THROW AssociatedDataValidationException ("AEAD auth tag mismatch: Tampering detected")</text>
+  </g>
+
+  <!-- ========================================== -->
+  <!-- 5. CRYPTO-SHREDDING (RIGHT TO BE FORGOTTEN)-->
+  <!-- ========================================== -->
+  <g>
+    <!-- Group Box -->
+    <rect x="50" y="990" width="1180" height="135" class="fragment-box" />
+    <rect x="50" y="990" width="280" height="18" class="fragment-header" />
+    <text x="56" y="1003" class="fragment-label">group [Crypto-Shredding (Permanent Deletion)]</text>
+
+    <!-- Delete keys -->
+    <line x1="100" y1="1030" x2="670" y2="1030" class="msg-call" />
+    <text x="110" y="1025" class="msg-label">cryptoShred(merchantId)</text>
+
+    <line x1="670" y1="1055" x2="1050" y2="1055" class="msg-call" />
+    <text x="730" y="1050" class="msg-label">deleteByMerchantId(merchantId)</text>
+
+    <path d="M 670 1075 L 700 1075 L 700 1095 L 670 1095" class="msg-self" />
+    <text x="710" y="1090" class="msg-label">cache.invalidate(merchantId)</text>
+
+    <text x="110" y="1115" class="msg-label-err">🔒 All previously encrypted data is now permanently and mathematically undecryptable.</text>
+  </g>
+
+</svg>
