@@ -39,7 +39,7 @@ export default function App() {
           <Route
             path="/rules"
             element={
-              <ProtectedRoute allowedRoles={['MERCHANT_ADMIN']}>
+              <ProtectedRoute allowedRoles={['RISK_ANALYST', 'MERCHANT_ADMIN']}>
                 <RulesPage />
               </ProtectedRoute>
             }
