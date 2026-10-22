@@ -1,14 +1,13 @@
 package com.pillapago.auth.controller;
 
-import com.pillapago.auth.dto.LoginRequest;
-import com.pillapago.auth.dto.LoginResponse;
-import com.pillapago.auth.dto.LogoutRequest;
-import com.pillapago.auth.dto.MessageResponse;
+import com.pillapago.auth.dto.*;
 import com.pillapago.auth.service.AuthService;
+import com.pillapago.auth.service.RegisterService;
 import com.pillapago.shared.security.UserPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Controlador REST para autenticación y cierre de sesión (HU-02 · RF-03).
+ * Controlador REST para registro, verificación de correo y autenticación (HU-01, HU-02).
  */
 @RestController
 @RequestMapping("/v1/auth")
@@ -25,6 +24,25 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final RegisterService registerService;
+
+    @PostMapping("/register")
+    public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
+        RegisterResponse response = registerService.register(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/verify-email")
+    public ResponseEntity<MessageResponse> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
+        MessageResponse response = registerService.verifyEmail(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<MessageResponse> resendVerification(@Valid @RequestBody ResendVerificationRequest request) {
+        MessageResponse response = registerService.resendVerification(request);
+        return ResponseEntity.ok(response);
+    }
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(

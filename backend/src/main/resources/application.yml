@@ -52,6 +52,14 @@ management:
     tags:
       application: pillapago-api
 
+brevo:
+  api-key: ${BREVO_API_KEY:}
+
+pillapago:
+  correo:
+    sender-email: ${BREVO_SENDER_EMAIL:jeffryedwin03@gmail.com}
+    sender-name: ${BREVO_SENDER_NAME:Pillapago Antifraude}
+
 ---
 # Configuración específica para Testcontainers en integración
 testcontainers:
