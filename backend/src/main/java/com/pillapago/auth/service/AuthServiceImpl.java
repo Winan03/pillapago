@@ -61,11 +61,11 @@ public class AuthServiceImpl implements AuthService {
             userOpt = userRepository.findByEmailHash(emailHash);
         }
 
-        // 3. Mitigación de enumeración de usuarios: Si no existe o no está activo, ejecutar dummy match
-        if (userOpt.isEmpty() || userOpt.get().getStatus() != UserStatus.ACTIVE) {
+        // 3. Mitigación de enumeración de usuarios: Si no existe, ejecutar dummy match
+        if (userOpt.isEmpty()) {
             passwordEncoder.matches(request.getPassword(), DUMMY_BCRYPT_HASH);
             recordFailedAttempt(ipKey, emailKey);
-            throw new InvalidCredentialsException("Credenciales inválidas");
+            throw new InvalidCredentialsException("El correo electrónico o la contraseña ingresados no coinciden. Por favor verifica tus datos e intenta nuevamente.");
         }
 
         User user = userOpt.get();
@@ -74,14 +74,23 @@ public class AuthServiceImpl implements AuthService {
         boolean passwordMatches = passwordEncoder.matches(request.getPassword(), user.getPasswordHash());
         if (!passwordMatches) {
             recordFailedAttempt(ipKey, emailKey);
-            throw new InvalidCredentialsException("Credenciales inválidas");
+            throw new InvalidCredentialsException("El correo electrónico o la contraseña ingresados no coinciden. Por favor verifica tus datos e intenta nuevamente.");
         }
 
-        // 5. Credenciales válidas: reiniciar contador de fallos
+        // 5. Estado de la cuenta: Explicación amigable y literal al usuario sin filtrar datos
+        if (user.getStatus() == UserStatus.PENDING_VERIFICATION) {
+            throw new InvalidCredentialsException("Tu cuenta aún no está activa. Revisa tu correo e ingresa el código de 6 dígitos para activarla antes de iniciar sesión.");
+        }
+
+        if (user.getStatus() == UserStatus.DISABLED) {
+            throw new InvalidCredentialsException("Tu cuenta se encuentra inhabilitada. Por favor contacta al soporte de Pillapago.");
+        }
+
+        // 6. Credenciales válidas: reiniciar contador de fallos
         rateLimiterService.recordSuccessfulLogin(ipKey);
         rateLimiterService.recordSuccessfulLogin(emailKey);
 
-        // 6. Generar Access Token (15 minutos) y Refresh Token rotativo
+        // 7. Generar Access Token (15 minutos) y Refresh Token rotativo
         UserPrincipal principal = UserPrincipal.fromUser(user);
         String accessToken = jwtService.generateAccessToken(principal);
         String refreshTokenValue = jwtService.generateRefreshTokenValue();

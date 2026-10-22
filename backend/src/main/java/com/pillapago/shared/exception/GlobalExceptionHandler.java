@@ -23,11 +23,16 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({InvalidCredentialsException.class, BadCredentialsException.class})
     public ResponseEntity<Map<String, Object>> handleInvalidCredentials(Exception ex, HttpServletRequest request) {
+        String userMsg = (ex.getMessage() != null && !ex.getMessage().isBlank() && !ex.getMessage().equals("Credenciales inválidas"))
+                ? ex.getMessage()
+                : "El correo electrónico o la contraseña ingresados no coinciden. Por favor verifica tus datos e intenta nuevamente.";
+
         Map<String, Object> problem = Map.of(
                 "type", "https://pillapago.dev/errors/unauthorized",
                 "title", "No autorizado",
                 "status", HttpStatus.UNAUTHORIZED.value(),
                 "detail", "Credenciales inválidas",
+                "userMessage", userMsg,
                 "instance", request.getRequestURI()
         );
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -101,6 +106,67 @@ public class GlobalExceptionHandler {
                 "userMessage", "Revisa los datos del formulario antes de continuar.",
                 "instance", request.getRequestURI(),
                 "invalidParams", errors
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem);
+    }
+
+    @ExceptionHandler(EmailAlreadyRegisteredException.class)
+    public ResponseEntity<Map<String, Object>> handleEmailAlreadyRegistered(EmailAlreadyRegisteredException ex, HttpServletRequest request) {
+        Map<String, Object> problem = Map.of(
+                "type", "https://pillapago.dev/errors/conflict",
+                "title", "Conflicto de Registro",
+                "status", HttpStatus.CONFLICT.value(),
+                "detail", ex.getMessage(),
+                "userMessage", "Este correo electrónico ya está registrado. Si ya tienes un comercio, inicia sesión o recupera el acceso.",
+                "instance", request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem);
+    }
+
+    @ExceptionHandler(AccountLockedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccountLocked(AccountLockedException ex, HttpServletRequest request) {
+        Map<String, Object> problem = Map.of(
+                "type", "https://pillapago.dev/errors/account-locked",
+                "title", "Cuenta Bloqueada Temporalmente",
+                "status", HttpStatus.LOCKED.value(),
+                "detail", ex.getMessage(),
+                "userMessage", ex.getMessage(),
+                "instance", request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.LOCKED)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem);
+    }
+
+    @ExceptionHandler(InvalidVerificationCodeException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidVerificationCode(InvalidVerificationCodeException ex, HttpServletRequest request) {
+        Map<String, Object> problem = Map.of(
+                "type", "https://pillapago.dev/errors/invalid-verification-code",
+                "title", "Código de Verificación Inválido",
+                "status", HttpStatus.BAD_REQUEST.value(),
+                "detail", ex.getMessage(),
+                "userMessage", ex.getMessage(),
+                "instance", request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem);
+    }
+
+    @ExceptionHandler(PasswordMismatchException.class)
+    public ResponseEntity<Map<String, Object>> handlePasswordMismatch(PasswordMismatchException ex, HttpServletRequest request) {
+        Map<String, Object> problem = Map.of(
+                "type", "https://pillapago.dev/errors/validation",
+                "title", "Datos inválidos",
+                "status", HttpStatus.BAD_REQUEST.value(),
+                "detail", ex.getMessage(),
+                "userMessage", "La contraseña y la confirmación no coinciden. Asegúrate de escribir exactamente la misma contraseña en ambos campos.",
+                "instance", request.getRequestURI(),
+                "invalidParams", Map.of("confirmPassword", ex.getMessage())
         );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .contentType(MediaType.APPLICATION_PROBLEM_JSON)

@@ -56,8 +56,14 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Rutas públicas de autenticación y verificación
-                        .requestMatchers(HttpMethod.POST, "/v1/auth/login", "/v1/auth/register", "/v1/auth/refresh").permitAll()
+                        // Rutas públicas de autenticación y verificación (HU-01, HU-02)
+                        .requestMatchers(HttpMethod.POST,
+                                "/v1/auth/login",
+                                "/v1/auth/register",
+                                "/v1/auth/verify-email",
+                                "/v1/auth/resend-verification",
+                                "/v1/auth/refresh"
+                        ).permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         // Cualquier otra ruta requiere autenticación explícita
                         .anyRequest().authenticated()
