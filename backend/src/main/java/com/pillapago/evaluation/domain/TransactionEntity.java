@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Entidad JPA que representa una transacción evaluada y persistida fuera del Hot Path (HU-06c).
+ * Entidad JPA que representa una transacción evaluada y persistida fuera del Hot Path (HU-06c, HU-08).
  */
 @Entity
 @Table(name = "transactions")
@@ -49,6 +49,9 @@ public class TransactionEntity {
 
     @Column(name = "risk_score", nullable = false)
     private Integer riskScore;
+
+    @Column(name = "rule_set_version", length = 50)
+    private String ruleSetVersion;
 
     @Column(nullable = false)
     @Builder.Default

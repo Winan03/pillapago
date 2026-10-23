@@ -4,11 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pillapago.evaluation.dto.EvaluateTransactionRequest;
 import com.pillapago.evaluation.dto.EvaluateTransactionResponse;
 import com.pillapago.evaluation.dto.IdempotencyResult;
+import com.pillapago.evaluation.engine.Condition;
 import com.pillapago.evaluation.engine.Decision;
-import com.pillapago.rules.domain.RuleConditionEntity;
-import com.pillapago.rules.domain.RuleEntity;
-import com.pillapago.rules.domain.RuleStatus;
-import com.pillapago.rules.repository.RuleRepository;
+import com.pillapago.evaluation.engine.Operator;
+import com.pillapago.evaluation.engine.Rule;
+import com.pillapago.evaluation.event.TransactionEvaluatedEvent;
 import com.pillapago.shared.exception.IdempotencyConflictException;
 import com.pillapago.shared.exception.RateLimitExceededException;
 import com.pillapago.tenant.domain.Merchant;
@@ -27,7 +27,9 @@ import java.util.concurrent.Executors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -40,7 +42,7 @@ class TransactionEvaluationServiceTest {
     @Mock
     private RedisVelocityService velocityService;
     @Mock
-    private RuleRepository ruleRepository;
+    private RuleEngineCacheService ruleEngineCacheService;
     @Mock
     private MerchantRepository merchantRepository;
     @Mock
@@ -72,7 +74,7 @@ class TransactionEvaluationServiceTest {
                 rateLimiterService,
                 idempotencyService,
                 velocityService,
-                ruleRepository,
+                ruleEngineCacheService,
                 merchantRepository,
                 eventPublisher,
                 objectMapper,
@@ -86,7 +88,8 @@ class TransactionEvaluationServiceTest {
         when(merchantRepository.findById(merchantId)).thenReturn(Optional.of(merchant));
         when(idempotencyService.processIdempotency(eq(merchantId), anyString(), anyString()))
                 .thenReturn(IdempotencyResult.acquired("tx_001"));
-        when(ruleRepository.findAllByMerchantIdWithConditions(merchantId)).thenReturn(Collections.emptyList());
+        when(ruleEngineCacheService.getActiveRuleSet(merchantId))
+                .thenReturn(new RuleEngineCacheService.ActiveRuleSet("v1", 1, Collections.emptyList()));
 
         EvaluateTransactionRequest request = EvaluateTransactionRequest.builder()
                 .transactionId("tx_001")
@@ -110,22 +113,11 @@ class TransactionEvaluationServiceTest {
         when(idempotencyService.processIdempotency(eq(merchantId), anyString(), anyString()))
                 .thenReturn(IdempotencyResult.acquired("tx_002"));
 
-        RuleConditionEntity cond = RuleConditionEntity.builder()
-                .fieldName("amount")
-                .operator(">")
-                .targetValue("500")
-                .build();
+        Condition cond = new Condition("amount", Operator.GREATER_THAN, "500");
+        Rule rule = new Rule("rule_1", "Monto Mayor a 500", "Alerta", List.of(cond), 60, true);
 
-        RuleEntity rule = RuleEntity.builder()
-                .id(UUID.randomUUID())
-                .name("Monto Mayor a 500")
-                .points(60)
-                .active(true)
-                .status(RuleStatus.PUBLISHED)
-                .conditions(List.of(cond))
-                .build();
-
-        when(ruleRepository.findAllByMerchantIdWithConditions(merchantId)).thenReturn(List.of(rule));
+        when(ruleEngineCacheService.getActiveRuleSet(merchantId))
+                .thenReturn(new RuleEngineCacheService.ActiveRuleSet("v1", 1, List.of(rule)));
 
         EvaluateTransactionRequest request = EvaluateTransactionRequest.builder()
                 .transactionId("tx_002")
@@ -151,6 +143,7 @@ class TransactionEvaluationServiceTest {
                 .transactionId("tx_cached")
                 .decision(Decision.APPROVE)
                 .riskScore(10)
+                .ruleSetVersion("v1")
                 .degraded(false)
                 .latencyMs(15)
                 .build();
@@ -171,8 +164,7 @@ class TransactionEvaluationServiceTest {
         assertThat(response).isNotNull();
         assertThat(response.getTransactionId()).isEqualTo("tx_cached");
         assertThat(response.getDecision()).isEqualTo(Decision.APPROVE);
-        // No debe evaluar reglas al ser un hit de caché
-        verify(ruleRepository, never()).findAllByMerchantIdWithConditions(any());
+        verify(ruleEngineCacheService, never()).getActiveRuleSet(any());
     }
 
     @Test
@@ -200,8 +192,7 @@ class TransactionEvaluationServiceTest {
         when(idempotencyService.processIdempotency(eq(merchantId), anyString(), anyString()))
                 .thenReturn(IdempotencyResult.acquired("tx_fail_closed"));
 
-        // Simular falla en ruleRepository
-        when(ruleRepository.findAllByMerchantIdWithConditions(merchantId))
+        when(ruleEngineCacheService.getActiveRuleSet(merchantId))
                 .thenThrow(new RuntimeException("Simulated database timeout or failure"));
 
         EvaluateTransactionRequest request = EvaluateTransactionRequest.builder()
@@ -225,7 +216,7 @@ class TransactionEvaluationServiceTest {
         when(idempotencyService.processIdempotency(eq(merchantId), anyString(), anyString()))
                 .thenReturn(IdempotencyResult.acquired("tx_fail_open"));
 
-        when(ruleRepository.findAllByMerchantIdWithConditions(merchantId))
+        when(ruleEngineCacheService.getActiveRuleSet(merchantId))
                 .thenThrow(new RuntimeException("Simulated timeout or failure"));
 
         EvaluateTransactionRequest request = EvaluateTransactionRequest.builder()

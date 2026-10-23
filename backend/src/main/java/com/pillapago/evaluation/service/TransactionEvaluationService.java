@@ -7,16 +7,11 @@ import com.pillapago.evaluation.dto.IdempotencyResult;
 import com.pillapago.evaluation.dto.RuleReasonDto;
 import com.pillapago.evaluation.engine.*;
 import com.pillapago.evaluation.event.TransactionEvaluatedEvent;
-import com.pillapago.rules.domain.RuleConditionEntity;
-import com.pillapago.rules.domain.RuleEntity;
-import com.pillapago.rules.domain.RuleStatus;
-import com.pillapago.rules.repository.RuleRepository;
 import com.pillapago.shared.exception.IdempotencyConflictException;
 import com.pillapago.shared.exception.RedisUnavailableException;
 import com.pillapago.shared.exception.ResourceNotFoundException;
 import com.pillapago.tenant.domain.Merchant;
 import com.pillapago.tenant.repository.MerchantRepository;
-import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -28,13 +23,14 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Servicio central del Hot Path de Evaluación de Transacciones (HU-06c).
+ * Servicio central del Hot Path de Evaluación de Transacciones (HU-06c, HU-08).
  *
  * Características críticas:
  * 1. SLA estricto de latencia (< 300 ms): si se supera o falla Redis, aplica FAIL_OPEN / FAIL_CLOSED con degraded = true.
  * 2. Idempotencia y Velocity mediante Redis.
  * 3. Rate limiting por API Key mediante Bucket4j.
  * 4. Cero I/O en PostgreSQL en el Hot Path: persistencia asíncrona mediante Hilos Virtuales Java 21.
+ * 5. Activación y recarga consistente de reglas en memoria sin downtime (HU-08 vía RuleEngineCacheService).
  */
 @Service
 public class TransactionEvaluationService {
@@ -45,7 +41,7 @@ public class TransactionEvaluationService {
     private final ApiKeyRateLimiterService rateLimiterService;
     private final RedisIdempotencyService idempotencyService;
     private final RedisVelocityService velocityService;
-    private final RuleRepository ruleRepository;
+    private final RuleEngineCacheService ruleEngineCacheService;
     private final MerchantRepository merchantRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
@@ -56,7 +52,7 @@ public class TransactionEvaluationService {
             ApiKeyRateLimiterService rateLimiterService,
             RedisIdempotencyService idempotencyService,
             RedisVelocityService velocityService,
-            RuleRepository ruleRepository,
+            RuleEngineCacheService ruleEngineCacheService,
             MerchantRepository merchantRepository,
             ApplicationEventPublisher eventPublisher,
             ObjectMapper objectMapper,
@@ -65,7 +61,7 @@ public class TransactionEvaluationService {
         this.rateLimiterService = rateLimiterService;
         this.idempotencyService = idempotencyService;
         this.velocityService = velocityService;
-        this.ruleRepository = ruleRepository;
+        this.ruleEngineCacheService = ruleEngineCacheService;
         this.merchantRepository = merchantRepository;
         this.eventPublisher = eventPublisher;
         this.objectMapper = objectMapper;
@@ -108,64 +104,64 @@ public class TransactionEvaluationService {
                                 cachedJson,
                                 EvaluateTransactionResponse.class
                         );
-                        cachedResponse.setLatencyMs(System.currentTimeMillis() - startTime);
                         return cachedResponse;
                     } catch (Exception e) {
-                        log.warn("Fallo al deserializar respuesta idempotente previa, re-evaluando...", e);
+                        log.warn("Error al deserializar respuesta cacheada en Redis: {}", e.getMessage());
                     }
                 }
             }
-        } catch (IdempotencyConflictException ex) {
-            // Conflictos de idempotencia (409) deben propagarse directamente
-            throw ex;
-        } catch (Exception ex) {
-            log.warn("Fallo en Redis al verificar idempotencia: {}. Continuando a evaluación degradada...", ex.getMessage());
-            // Si Redis falló en idempotencia, aplicamos la política de resiliencia directamente
-            return buildDegradedResponse(merchant, request, "Redis no disponible en chequeo de idempotencia: " + ex.getMessage(), startTime);
+        } catch (IdempotencyConflictException e) {
+            log.warn("Conflicto de idempotencia detectado para tx {}", request.getTransactionId());
+            throw e;
+        } catch (RedisUnavailableException e) {
+            log.warn("Redis no disponible en verificación de idempotencia, aplicando failover: {}", e.getMessage());
+            return buildDegradedResponse(merchant, request, "Falla en capa de idempotencia Redis", startTime);
         }
 
-        // 4. Ejecución del Hot Path con corte estricto de 300 ms SLA
-        EvaluationExecutionResult execResult;
+        // 4. Ejecución del Hot Path con corte estricto de tiempo a 300 ms (CompletableFuture + Hilos Virtuales)
         CompletableFuture<EvaluationExecutionResult> future = CompletableFuture.supplyAsync(
-                () -> executeHotPathCore(merchant, request),
+                () -> executeEvaluation(merchant, request),
                 virtualThreadTaskExecutor
         );
 
+        EvaluationExecutionResult result;
         try {
-            execResult = future.get(MAX_HOT_PATH_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        } catch (TimeoutException ex) {
-            log.warn("SLA de latencia excedido (>300ms) para tx {}. Aplicando failPolicy {} del comercio {}",
-                    request.getTransactionId(), merchant.getFailPolicy(), merchantId);
+            result = future.get(MAX_HOT_PATH_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+            log.error("Evaluación excedió el SLA de 300 ms para tx {}. Aplicando failover.", request.getTransactionId());
             future.cancel(true);
-            execResult = applyFailPolicy(merchant, "SLA de latencia (>300ms) excedido en evaluación");
-        } catch (Exception ex) {
-            Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
-            log.error("Falla en evaluación de tx {}: {}. Aplicando failPolicy {}",
-                    request.getTransactionId(), cause.getMessage(), merchant.getFailPolicy());
-            execResult = applyFailPolicy(merchant, "Falla en motor o infraestructura: " + cause.getMessage());
+            return buildDegradedResponse(merchant, request, "SLA de evaluación superó los 300 ms", startTime);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("Hilo de evaluación interrumpido para tx {}", request.getTransactionId());
+            return buildDegradedResponse(merchant, request, "Evaluación interrumpida", startTime);
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause() != null ? e.getCause() : e;
+            log.error("Error durante la evaluación de la tx {}: {}", request.getTransactionId(), cause.getMessage(), cause);
+            return buildDegradedResponse(merchant, request, "Error interno en motor: " + cause.getMessage(), startTime);
         }
 
         long latencyMs = System.currentTimeMillis() - startTime;
 
         EvaluateTransactionResponse response = EvaluateTransactionResponse.builder()
                 .transactionId(request.getTransactionId())
-                .decision(execResult.decision())
-                .riskScore(execResult.riskScore())
-                .reasons(execResult.reasons())
-                .ruleSetVersion("1.0.0")
-                .degraded(execResult.degraded())
+                .decision(result.decision())
+                .riskScore(result.riskScore())
+                .reasons(result.reasons())
+                .ruleSetVersion(result.ruleSetVersion() != null ? result.ruleSetVersion() : "v0-draft")
+                .degraded(result.degraded())
                 .latencyMs(latencyMs)
                 .build();
 
-        // 5. Marcar Idempotencia como COMPLETED en Redis (si Redis responde)
+        // 5. Guardar respuesta final en Redis para futuras peticiones idempotentes
         try {
             String responseJson = objectMapper.writeValueAsString(response);
             idempotencyService.markCompleted(merchantId, request.getTransactionId(), responseJson);
         } catch (Exception e) {
-            log.warn("No se pudo persistir estado COMPLETED en Redis para idempotencia: {}", e.getMessage());
+            log.warn("No se pudo cachear respuesta en Redis para tx {}: {}", request.getTransactionId(), e.getMessage());
         }
 
-        // 6. Publicación del evento para persistencia asíncrona post-respuesta (Java 21 Virtual Threads)
+        // 6. Publicar evento asíncrono para persistencia en PostgreSQL sin bloquear el Hot Path
         eventPublisher.publishEvent(TransactionEvaluatedEvent.builder()
                 .merchantId(merchantId)
                 .request(request)
@@ -176,9 +172,15 @@ public class TransactionEvaluationService {
         return response;
     }
 
-    private EvaluationExecutionResult executeHotPathCore(Merchant merchant, EvaluateTransactionRequest request) {
+    private EvaluationExecutionResult executeEvaluation(
+            Merchant merchant,
+            EvaluateTransactionRequest request
+    ) {
         UUID merchantId = merchant.getId();
         long now = System.currentTimeMillis();
+
+        // 1. Obtener conjunto de reglas activo en memoria (Caché O(1) con AtomicReference - HU-08)
+        RuleEngineCacheService.ActiveRuleSet activeRuleSet = ruleEngineCacheService.getActiveRuleSet(merchantId);
 
         // 1. Métricas de velocidad en Redis
         long ipVelocity10m = 0;
@@ -187,46 +189,52 @@ public class TransactionEvaluationService {
 
         try {
             if (request.getIpAddress() != null && !request.getIpAddress().isBlank()) {
-                ipVelocity10m = velocityService.recordAndGetFrequency(merchantId, "ip_txns", request.getIpAddress(), 600, request.getTransactionId(), now);
+                ipVelocity10m = velocityService.recordAndGetFrequency(
+                        merchantId, "ip_txns", request.getIpAddress(), 600, request.getTransactionId(), now
+                );
             }
             if (request.getCardFingerprint() != null && !request.getCardFingerprint().isBlank()) {
-                cardVelocity1h = velocityService.recordAndGetFrequency(merchantId, "card_txns", request.getCardFingerprint(), 3600, request.getTransactionId(), now);
+                cardVelocity1h = velocityService.recordAndGetFrequency(
+                        merchantId, "card_txns", request.getCardFingerprint(), 3600, request.getTransactionId(), now
+                );
             }
             if (request.getDeviceId() != null && !request.getDeviceId().isBlank()) {
-                deviceVelocity1h = velocityService.recordAndGetFrequency(merchantId, "device_txns", request.getDeviceId(), 3600, request.getTransactionId(), now);
+                deviceVelocity1h = velocityService.recordAndGetFrequency(
+                        merchantId, "device_txns", request.getDeviceId(), 3600, request.getTransactionId(), now
+                );
             }
-        } catch (RedisUnavailableException ex) {
-            log.warn("Redis falló al registrar velocidad: {}", ex.getMessage());
-            return applyFailPolicy(merchant, "Redis no disponible al calcular velocidad: " + ex.getMessage());
+        } catch (RedisUnavailableException e) {
+            log.warn("Falla en Redis al calcular velocidad para tx {}: {}", request.getTransactionId(), e.getMessage());
+            return applyFailPolicy(merchant, "Falla en servicio de velocidad Redis");
         }
 
-        // 2. Cargar reglas activas del comercio
-        List<RuleEntity> ruleEntities = ruleRepository.findAllByMerchantIdWithConditions(merchantId).stream()
-                .filter(r -> Boolean.TRUE.equals(r.getActive()) && (r.getStatus() == RuleStatus.PUBLISHED || r.getStatus() == RuleStatus.DRAFT))
-                .toList();
-
-        List<Rule> engineRules = convertToEngineRules(ruleEntities);
-
-        // 3. Construir EvaluationContext
+        // 2. Construir EvaluationContext para el motor de reglas
         EvaluationContext context = buildEvaluationContext(request, ipVelocity10m, cardVelocity1h, deviceVelocity1h);
 
-        // 4. Umbrales del comercio
+        // 3. Reglas en memoria y umbrales
+        List<Rule> rules = activeRuleSet.compiledRules();
         int reviewThreshold = merchant.getReviewThreshold() != null ? merchant.getReviewThreshold() : 50;
         int rejectThreshold = merchant.getRejectThreshold() != null ? merchant.getRejectThreshold() : 80;
-        ThresholdConfig thresholds = new ThresholdConfig(reviewThreshold, rejectThreshold);
+        ThresholdConfig thresholdConfig = new ThresholdConfig(reviewThreshold, rejectThreshold);
 
-        // 5. Evaluar con motor de reglas
-        RuleEvaluationResult result = ruleEvaluator.evaluate(engineRules, context, thresholds);
+        // 4. Evaluar con motor antifraude
+        RuleEvaluationResult evalResult = ruleEvaluator.evaluate(rules, context, thresholdConfig);
 
-        List<RuleReasonDto> reasons = result.reasons().stream()
+        List<RuleReasonDto> reasons = evalResult.reasons().stream()
                 .map(r -> RuleReasonDto.builder()
                         .ruleName(r.ruleName())
                         .points(r.points())
-                        .description("Regla antifraude activada: " + r.ruleName() + " (+" + r.points() + " pts)")
+                        .description("Regla activada: " + r.ruleName() + " (+" + r.points() + " pts)")
                         .build())
                 .toList();
 
-        return new EvaluationExecutionResult(result.decision(), result.riskScore(), reasons, false);
+        return new EvaluationExecutionResult(
+                evalResult.decision(),
+                evalResult.riskScore(),
+                reasons,
+                activeRuleSet.versionName(),
+                false
+        );
     }
 
     private EvaluationContext buildEvaluationContext(
@@ -237,7 +245,6 @@ public class TransactionEvaluationService {
     ) {
         EvaluationContext.Builder builder = EvaluationContext.builder();
 
-        // Atributos de transacción
         if (request.getAmount() != null) builder.put("amount", request.getAmount());
         if (request.getCurrency() != null) builder.put("currency", request.getCurrency());
         if (request.getPaymentMethod() != null) builder.put("paymentMethod", request.getPaymentMethod());
@@ -249,7 +256,6 @@ public class TransactionEvaluationService {
         if (request.getIpAddress() != null) builder.put("ipAddress", request.getIpAddress());
         if (request.getDeviceId() != null) builder.put("deviceId", request.getDeviceId());
 
-        // Métricas de velocidad
         builder.put("ip_txns", ipVelocity10m);
         builder.put("ip_velocity", ipVelocity10m);
         builder.put("ip_txns_10m", ipVelocity10m);
@@ -260,40 +266,11 @@ public class TransactionEvaluationService {
         builder.put("device_velocity", deviceVelocity1h);
         builder.put("device_txns_1h", deviceVelocity1h);
 
-        // Metadatos adicionales
         if (request.getMetadata() != null) {
             builder.putAll(request.getMetadata());
         }
 
         return builder.build();
-    }
-
-    private List<Rule> convertToEngineRules(List<RuleEntity> entities) {
-        List<Rule> rules = new ArrayList<>();
-        for (RuleEntity entity : entities) {
-            List<Condition> conditions = new ArrayList<>();
-            for (RuleConditionEntity cond : entity.getConditions()) {
-                Operator op;
-                try {
-                    op = Operator.valueOf(cond.getOperator());
-                } catch (IllegalArgumentException e) {
-                    op = Operator.fromSymbol(cond.getOperator());
-                }
-                conditions.add(new Condition(cond.getFieldName(), op, cond.getTargetValue()));
-            }
-
-            if (!conditions.isEmpty()) {
-                rules.add(new Rule(
-                        entity.getId().toString(),
-                        entity.getName(),
-                        entity.getDescription(),
-                        conditions,
-                        entity.getPoints(),
-                        Boolean.TRUE.equals(entity.getActive())
-                ));
-            }
-        }
-        return rules;
     }
 
     private EvaluationExecutionResult applyFailPolicy(Merchant merchant, String reasonMsg) {
@@ -311,7 +288,7 @@ public class TransactionEvaluationService {
                         .build()
         );
 
-        return new EvaluationExecutionResult(decision, score, reasons, true);
+        return new EvaluationExecutionResult(decision, score, reasons, "FAILOVER", true);
     }
 
     private EvaluateTransactionResponse buildDegradedResponse(
@@ -328,7 +305,7 @@ public class TransactionEvaluationService {
                 .decision(result.decision())
                 .riskScore(result.riskScore())
                 .reasons(result.reasons())
-                .ruleSetVersion("1.0.0")
+                .ruleSetVersion("FAILOVER")
                 .degraded(true)
                 .latencyMs(latencyMs)
                 .build();
@@ -366,6 +343,7 @@ public class TransactionEvaluationService {
             Decision decision,
             int riskScore,
             List<RuleReasonDto> reasons,
+            String ruleSetVersion,
             boolean degraded
     ) {}
 }
