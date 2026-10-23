@@ -56,12 +56,14 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Rutas públicas de autenticación y verificación (HU-01, HU-02)
+                        // Rutas públicas de autenticación, verificación y recuperación (HU-01, HU-02, HU-03)
                         .requestMatchers(HttpMethod.POST,
                                 "/v1/auth/login",
                                 "/v1/auth/register",
                                 "/v1/auth/verify-email",
                                 "/v1/auth/resend-verification",
+                                "/v1/auth/forgot-password",
+                                "/v1/auth/reset-password",
                                 "/v1/auth/refresh"
                         ).permitAll()
                         .requestMatchers("/actuator/**").permitAll()
@@ -88,11 +90,12 @@ public class SecurityConfig {
                     "type", "https://pillapago.dev/errors/unauthorized",
                     "title", "No autorizado",
                     "status", 401,
-                    "detail", "Autenticación requerida o credenciales inválidas",
+                    "detail", "Acceso no autenticado o token JWT no proporcionado",
+                    "userMessage", "Debes iniciar sesión con tus credenciales para acceder a este recurso.",
                     "instance", request.getRequestURI()
             );
 
-            response.getWriter().write(objectMapper.writeValueAsString(problem));
+            objectMapper.writeValue(response.getOutputStream(), problem);
         };
     }
 
@@ -106,11 +109,12 @@ public class SecurityConfig {
                     "type", "https://pillapago.dev/errors/forbidden",
                     "title", "Acceso prohibido",
                     "status", 403,
-                    "detail", "No cuenta con los permisos necesarios para realizar esta acción",
+                    "detail", "No cuenta con los privilegios suficientes para este recurso",
+                    "userMessage", "No tienes permisos de Administrador para realizar esta acción en tu comercio.",
                     "instance", request.getRequestURI()
             );
 
-            response.getWriter().write(objectMapper.writeValueAsString(problem));
+            objectMapper.writeValue(response.getOutputStream(), problem);
         };
     }
 }

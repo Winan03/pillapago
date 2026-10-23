@@ -2,6 +2,7 @@ package com.pillapago.auth.controller;
 
 import com.pillapago.auth.dto.*;
 import com.pillapago.auth.service.AuthService;
+import com.pillapago.auth.service.PasswordResetService;
 import com.pillapago.auth.service.RegisterService;
 import com.pillapago.shared.security.UserPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Controlador REST para registro, verificación de correo y autenticación (HU-01, HU-02).
+ * Controlador REST para registro, verificación de correo, autenticación y recuperación de contraseñas (HU-01, HU-02, HU-03).
  */
 @RestController
 @RequestMapping("/v1/auth")
@@ -25,6 +26,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final RegisterService registerService;
+    private final PasswordResetService passwordResetService;
 
     @PostMapping("/register")
     public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
@@ -60,6 +62,24 @@ public class AuthController {
             @AuthenticationPrincipal UserPrincipal currentUser
     ) {
         MessageResponse response = authService.logout(request, currentUser);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<MessageResponse> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request,
+            HttpServletRequest httpServletRequest
+    ) {
+        String clientIp = resolveClientIp(httpServletRequest);
+        MessageResponse response = passwordResetService.requestPasswordReset(request, clientIp);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<MessageResponse> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request
+    ) {
+        MessageResponse response = passwordResetService.resetPassword(request);
         return ResponseEntity.ok(response);
     }
 

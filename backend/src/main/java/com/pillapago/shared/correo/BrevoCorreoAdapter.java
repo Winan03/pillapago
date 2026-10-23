@@ -23,15 +23,18 @@ public class BrevoCorreoAdapter implements CorreoPort {
     private final String apiKey;
     private final String senderEmail;
     private final String senderName;
+    private final String frontendUrl;
 
     public BrevoCorreoAdapter(
             @Value("${brevo.api-key:}") String apiKey,
             @Value("${pillapago.correo.sender-email:jeffryedwin03@gmail.com}") String senderEmail,
-            @Value("${pillapago.correo.sender-name:Pillapago Antifraude}") String senderName
+            @Value("${pillapago.correo.sender-name:Pillapago Antifraude}") String senderName,
+            @Value("${pillapago.frontend.url:https://pillapago.com}") String frontendUrl
     ) {
         this.apiKey = apiKey != null ? apiKey.trim() : "";
         this.senderEmail = senderEmail != null ? senderEmail.trim() : "jeffryedwin03@gmail.com";
         this.senderName = senderName != null ? senderName.trim() : "Pillapago Antifraude";
+        this.frontendUrl = frontendUrl != null ? frontendUrl.trim() : "https://pillapago.com";
         this.restClient = RestClient.builder()
                 .baseUrl("https://api.brevo.com/v3")
                 .build();
@@ -80,6 +83,34 @@ public class BrevoCorreoAdapter implements CorreoPort {
                 """.formatted(nombreAdmin, merchantName);
 
         enviarPeticionBrevo(destinatario, nombreAdmin, "¡Bienvenido a Pillapago! - Cuenta Activada", htmlContent);
+    }
+
+    @Override
+    public void enviarRecuperacionContrasena(String destinatario, String nombreUsuario, String token) {
+        if (apiKey.isEmpty()) {
+            log.warn("[BREVO] No se configuró 'brevo.api-key'. El token de recuperación para {} no se envió por correo real.",
+                    destinatario);
+            return;
+        }
+
+        String resetLink = frontendUrl + "/reset-password?token=" + token;
+        String htmlContent = """
+                <div style="font-family: Arial, sans-serif; max-width: 550px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    <h2 style="color: #0f172a; margin-top: 0;">Restablecer Contraseña - Pillapago</h2>
+                    <p style="color: #334155;">Hola <strong>%s</strong>,</p>
+                    <p style="color: #334155;">Hemos recibido una solicitud para restablecer la contraseña de tu cuenta en Pillapago. Haz clic en el siguiente botón para continuar:</p>
+                    <div style="text-align: center; margin: 25px 0;">
+                        <a href="%s" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Restablecer mi contraseña</a>
+                    </div>
+                    <p style="color: #64748b; font-size: 13px;">O copia y pega el siguiente enlace en tu navegador:</p>
+                    <p style="color: #2563eb; word-break: break-all; font-size: 12px;">%s</p>
+                    <p style="color: #64748b; font-size: 13px;">Este enlace es de <strong>un solo uso</strong> y expirará en <strong>30 minutos</strong>. Si tú no solicitaste este cambio, puedes ignorar este correo; tu contraseña actual continuará siendo segura.</p>
+                    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+                    <p style="color: #94a3b8; font-size: 11px; text-align: center;">Pillapago - Detección y Prevención de Fraude en Tiempo Real</p>
+                </div>
+                """.formatted(nombreUsuario, resetLink, resetLink);
+
+        enviarPeticionBrevo(destinatario, nombreUsuario, "Instrucciones para restablecer tu contraseña - Pillapago", htmlContent);
     }
 
     private void enviarPeticionBrevo(String destinatario, String nombreDestinatario, String asunto, String htmlContent) {
