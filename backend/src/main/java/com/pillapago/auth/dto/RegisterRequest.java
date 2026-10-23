@@ -1,8 +1,10 @@
 package com.pillapago.auth.dto;
 
 import com.pillapago.auth.validator.StrongPassword;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
@@ -32,4 +34,9 @@ public class RegisterRequest {
 
     @NotBlank(message = "La confirmación de contraseña es obligatoria")
     private String confirmPassword;
+
+    @NotNull(message = "Debes indicar la aceptación de los Términos y Condiciones")
+    @AssertTrue(message = "Debes aceptar los Términos y Condiciones y la Política de Privacidad para registrar tu comercio")
+    @Builder.Default
+    private Boolean acceptedTerms = true;
 }

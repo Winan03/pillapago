@@ -66,6 +66,8 @@ public class SecurityConfig {
                                 "/v1/auth/reset-password",
                                 "/v1/auth/refresh"
                         ).permitAll()
+                        // Rutas públicas legales y de auditoría (Términos y Condiciones, Políticas de Privacidad)
+                        .requestMatchers(HttpMethod.GET, "/v1/legal/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         // Cualquier otra ruta requiere autenticación explícita
                         .anyRequest().authenticated()
