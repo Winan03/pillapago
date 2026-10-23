@@ -49,6 +49,12 @@ public class User {
     @Column(name = "mfa_enabled")
     private Boolean mfaEnabled;
 
+    @Column(name = "terms_accepted_at")
+    private OffsetDateTime termsAcceptedAt;
+
+    @Column(name = "terms_version", length = 20)
+    private String termsVersion;
+
     @Column(name = "created_at")
     private OffsetDateTime createdAt;
 
@@ -62,5 +68,7 @@ public class User {
         if (status == null) status = UserStatus.PENDING_VERIFICATION;
         if (role == null) role = UserRole.MERCHANT_ADMIN;
         if (mfaEnabled == null) mfaEnabled = false;
+        if (termsVersion == null) termsVersion = "v1.0";
+        if (termsAcceptedAt == null) termsAcceptedAt = OffsetDateTime.now();
     }
 }
