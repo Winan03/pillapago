@@ -1,5 +1,7 @@
 package com.pillapago.tenant.service;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.pillapago.shared.crypto.ApiKeyCryptoService;
 import com.pillapago.shared.exception.ResourceNotFoundException;
 import com.pillapago.tenant.domain.ApiKey;
@@ -18,9 +20,11 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 /**
- * Servicio de lógica de negocio para la gestión segura del ciclo de vida de API Keys (HU-05).
+ * Servicio de lógica de negocio para la gestión segura del ciclo de vida de API Keys (HU-05 y HU-06c).
+ * Optimizado para el Hot Path mediante una caché en memoria Caffeine (15 min TTL) con invalidación inmediata al revocar.
  */
 @Service
 @RequiredArgsConstructor
@@ -29,6 +33,12 @@ public class ApiKeyService {
     private final ApiKeyRepository apiKeyRepository;
     private final MerchantRepository merchantRepository;
     private final ApiKeyCryptoService cryptoService;
+
+    // Caché en memoria para evitar consultas recurrentes a PostgreSQL en el Hot Path de transacciones
+    private final Cache<String, ApiKey> apiKeyCache = Caffeine.newBuilder()
+            .maximumSize(5000)
+            .expireAfterWrite(15, TimeUnit.MINUTES)
+            .build();
 
     /**
      * Genera una nueva API Key para el comercio.
@@ -55,6 +65,9 @@ public class ApiKeyService {
                 .build();
 
         ApiKey saved = apiKeyRepository.save(apiKey);
+
+        // Opcional: pre-cachear la nueva clave activa
+        apiKeyCache.put(keyHash, saved);
 
         return ApiKeyCreatedResponse.builder()
                 .id(saved.getId())
@@ -87,7 +100,7 @@ public class ApiKeyService {
 
     /**
      * Revoca inmediatamente la API Key especificada.
-     * Garantiza aislamiento multi-tenant: si la clave no pertenece al comercio, lanza ResourceNotFoundException.
+     * Invalida proactivamente la entrada en la caché en memoria para garantizar cese inmediato de acceso.
      */
     @Transactional
     public ApiKeyRevokedResponse revokeApiKey(UUID apiKeyId, UUID merchantId) {
@@ -100,6 +113,9 @@ public class ApiKeyService {
         apiKey.setActive(false);
         apiKeyRepository.save(apiKey);
 
+        // Invalidar caché en memoria de inmediato
+        apiKeyCache.invalidate(apiKey.getKeyHash());
+
         return ApiKeyRevokedResponse.builder()
                 .id(apiKey.getId())
                 .status("REVOKED")
@@ -108,7 +124,8 @@ public class ApiKeyService {
     }
 
     /**
-     * Valida una API key a partir de su texto plano entrante (calcula SHA-256 y busca en BD).
+     * Valida una API key a partir de su texto plano entrante.
+     * Optimizado mediante la caché en memoria Caffeine para responder en microsegundos en el Hot Path.
      */
     @Transactional(readOnly = true)
     public Optional<ApiKey> findByRawKey(String rawKey) {
@@ -116,7 +133,15 @@ public class ApiKeyService {
             return Optional.empty();
         }
         String keyHash = cryptoService.computeSha256(rawKey.trim());
-        return apiKeyRepository.findByKeyHash(keyHash);
+
+        ApiKey cached = apiKeyCache.getIfPresent(keyHash);
+        if (cached != null) {
+            return Optional.of(cached);
+        }
+
+        Optional<ApiKey> apiKeyOpt = apiKeyRepository.findByKeyHash(keyHash);
+        apiKeyOpt.ifPresent(apiKey -> apiKeyCache.put(keyHash, apiKey));
+        return apiKeyOpt;
     }
 
     /**
@@ -126,5 +151,12 @@ public class ApiKeyService {
     public void recordKeyUsage(ApiKey apiKey) {
         apiKey.setLastUsedAt(OffsetDateTime.now());
         apiKeyRepository.save(apiKey);
+    }
+
+    /**
+     * Invalida completamente la caché de API Keys (útil para pruebas y sincronización).
+     */
+    public void clearCache() {
+        apiKeyCache.invalidateAll();
     }
 }

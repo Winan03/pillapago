@@ -6,6 +6,9 @@ server:
 spring:
   application:
     name: pillapago-api
+  threads:
+    virtual:
+      enabled: true
   datasource:
     url: jdbc:postgresql://${POSTGRES_HOST:127.0.0.1}:${POSTGRES_PORT:5433}/pillapago
     username: ${POSTGRES_USER:pillapago_user}
@@ -46,8 +49,8 @@ management:
   endpoint:
     health:
       show: always
-      probes:
-        enabled: true
+    probes:
+      enabled: true
   metrics:
     tags:
       application: pillapago-api
