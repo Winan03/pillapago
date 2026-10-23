@@ -1,0 +1,247 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 1200" width="100%" height="100%">
+  <defs>
+    <style>
+      .bg { fill: #ffffff; }
+      .uml-title { fill: #1e293b; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 19px; font-weight: 700; }
+      .uml-subtitle { fill: #64748b; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 13px; }
+      
+      /* Lifelines */
+      .lifeline-line { stroke: #0284c7; stroke-width: 1.5; stroke-dasharray: 6 5; }
+      
+      /* Participant boxes */
+      .participant-box { fill: #f0f9ff; stroke: #0284c7; stroke-width: 1.5; rx: 4; }
+      .participant-name { fill: #0f172a; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 12px; font-weight: 600; text-anchor: middle; }
+      .participant-type { fill: #0369a1; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 10px; text-anchor: middle; }
+      
+      /* Actor Stick Figure */
+      .actor-icon { stroke: #0284c7; stroke-width: 1.8; fill: none; stroke-linecap: round; }
+      
+      /* Activation Bars */
+      .activation-bar { fill: #e0f2fe; stroke: #0284c7; stroke-width: 1.5; }
+      .activation-bar-sub { fill: #bae6fd; stroke: #0284c7; stroke-width: 1.5; }
+      
+      /* Message Lines */
+      .msg-call { stroke: #0f172a; stroke-width: 1.5; marker-end: url(#arrow-sync); }
+      .msg-return { stroke: #64748b; stroke-width: 1.5; stroke-dasharray: 5 4; marker-end: url(#arrow-reply); }
+      .msg-self { stroke: #0f172a; stroke-width: 1.5; fill: none; marker-end: url(#arrow-sync); }
+      
+      /* Labels */
+      .msg-label { fill: #0f172a; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 11.5px; font-weight: 500; }
+      .return-label { fill: #475569; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 10.5px; font-weight: 500; font-style: italic; }
+      .tech-note { fill: #0369a1; font-family: ui-monospace, monospace; font-size: 10px; }
+      
+      /* Fragment Boxes (alt, opt, group) */
+      .fragment-box { fill: none; stroke: #94a3b8; stroke-width: 1.2; stroke-dasharray: 4 2; }
+      .fragment-header { fill: #e2e8f0; stroke: #94a3b8; stroke-width: 1.2; }
+      .fragment-label { fill: #334155; font-family: ui-monospace, monospace; font-size: 11px; font-weight: 700; }
+      .fragment-divider { stroke: #94a3b8; stroke-width: 1; stroke-dasharray: 3 3; }
+      .fragment-guard { fill: #475569; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 10.5px; font-weight: 600; }
+    </style>
+    
+    <marker id="arrow-sync" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#0f172a" />
+    </marker>
+    <marker id="arrow-reply" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#64748b" />
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="100%" height="100%" class="bg" />
+
+  <!-- Diagram Headers -->
+  <text x="50" y="42" class="uml-title">UML Sequence: HU-08 Publicacion de Versiones de Reglas y Hot Path (Zero-Downtime E2E)</text>
+  <text x="50" y="64" class="uml-subtitle">Publicacion Atomica vN, Swap de Puntero In-Memory O(1) con AtomicReference, Rollback sin Bloqueos y Auditoria PostgreSQL</text>
+
+  <!-- Lifeline X Coordinates:
+       1. Risk Analyst (UI): 80
+       2. RuleSetController: 250
+       3. RuleSetVersionService: 450
+       4. RuleEngineCacheService (AtomicRef): 680
+       5. PostgreSQL (rule_set_versions): 880
+       6. Evaluation / HotPath: 1080
+       7. Merchant / Checkout: 1200
+  -->
+
+  <!-- Lifelines -->
+  <line x1="80" y1="130" x2="80" y2="1140" class="lifeline-line" />
+  <line x1="250" y1="130" x2="250" y2="1140" class="lifeline-line" />
+  <line x1="450" y1="130" x2="450" y2="1140" class="lifeline-line" />
+  <line x1="680" y1="130" x2="680" y2="1140" class="lifeline-line" />
+  <line x1="880" y1="130" x2="880" y2="1140" class="lifeline-line" />
+  <line x1="1080" y1="130" x2="1080" y2="1140" class="lifeline-line" />
+  <line x1="1200" y1="130" x2="1200" y2="1140" class="lifeline-line" />
+
+  <!-- Participant Headers -->
+  <!-- 1. Risk Analyst -->
+  <circle cx="80" cy="92" r="8" class="actor-icon" />
+  <line x1="80" y1="100" x2="80" y2="114" class="actor-icon" />
+  <line x1="70" y1="105" x2="90" y2="105" class="actor-icon" />
+  <line x1="80" y1="114" x2="72" y2="126" class="actor-icon" />
+  <line x1="80" y1="114" x2="88" y2="126" class="actor-icon" />
+  <text x="80" y="142" class="participant-name">Risk Analyst</text>
+  <text x="80" y="154" class="participant-type">&lt;&lt;React Frontend&gt;&gt;</text>
+
+  <!-- 2. Controller -->
+  <rect x="180" y="95" width="140" height="36" class="participant-box" />
+  <text x="250" y="112" class="participant-name">RuleSetController</text>
+  <text x="250" y="124" class="participant-type">&lt;&lt;REST API /v1/rule-sets&gt;&gt;</text>
+
+  <!-- 3. Service -->
+  <rect x="375" y="95" width="150" height="36" class="participant-box" />
+  <text x="450" y="112" class="participant-name">RuleSetVersionService</text>
+  <text x="450" y="124" class="participant-type">&lt;&lt;Spring Service&gt;&gt;</text>
+
+  <!-- 4. Cache Engine -->
+  <rect x="595" y="95" width="170" height="36" class="participant-box" />
+  <text x="680" y="112" class="participant-name">RuleEngineCacheService</text>
+  <text x="680" y="124" class="participant-type">&lt;&lt;AtomicReference O(1)&gt;&gt;</text>
+
+  <!-- 5. PostgreSQL -->
+  <rect x="815" y="95" width="130" height="36" class="participant-box" />
+  <text x="880" y="112" class="participant-name">PostgreSQL Database</text>
+  <text x="880" y="124" class="participant-type">&lt;&lt;Flyway V10 Schema&gt;&gt;</text>
+
+  <!-- 6. Evaluation Service -->
+  <rect x="1005" y="95" width="150" height="36" class="participant-box" />
+  <text x="1080" y="112" class="participant-name">TransactionEvaluation</text>
+  <text x="1080" y="124" class="participant-type">&lt;&lt;Hot Path Engine&gt;&gt;</text>
+
+  <!-- 7. Merchant / API Client -->
+  <circle cx="1200" cy="92" r="8" class="actor-icon" />
+  <line x1="1200" y1="100" x2="1200" y2="114" class="actor-icon" />
+  <line x1="1190" y1="105" x2="1210" y2="105" class="actor-icon" />
+  <line x1="1200" y1="114" x2="1192" y2="126" class="actor-icon" />
+  <line x1="1200" y1="114" x2="1208" y2="126" class="actor-icon" />
+  <text x="1200" y="142" class="participant-name">API Client</text>
+  <text x="1200" y="154" class="participant-type">&lt;&lt;Payment Traffic&gt;&gt;</text>
+
+  <!-- SECTION 1: Diff Pre-visualizacion -->
+  <rect x="40" y="175" width="670" height="110" class="fragment-box" />
+  <polygon points="40,175 140,175 148,187 40,187" class="fragment-header" />
+  <text x="45" y="184" class="fragment-label">opt: Pre-visualizar Diff</text>
+
+  <rect x="75" y="195" width="10" height="75" class="activation-bar" />
+  <line x1="85" y1="205" x2="245" y2="205" class="msg-call" />
+  <text x="100" y="200" class="msg-label">1: GET /v1/rule-sets/draft-diff</text>
+
+  <rect x="245" y="205" width="10" height="55" class="activation-bar" />
+  <line x1="255" y1="215" x2="445" y2="215" class="msg-call" />
+  <text x="265" y="210" class="msg-label">2: calculateDraftDiff(merchantId)</text>
+
+  <line x1="445" y1="235" x2="255" y2="235" class="msg-return" />
+  <text x="265" y="230" class="return-label">DiffSummary (added, modified, deactivated, totalRules)</text>
+
+  <line x1="245" y1="255" x2="85" y2="255" class="msg-return" />
+  <text x="100" y="250" class="return-label">200 OK + PublishVersionModal (Vista de cambios sin emojis)</text>
+
+  <!-- SECTION 2: Atomic Publication & Memory Hot-Swap -->
+  <rect x="40" y="305" width="870" height="345" class="fragment-box" />
+  <polygon points="40,305 180,305 188,317 40,317" class="fragment-header" />
+  <text x="45" y="314" class="fragment-label">group: Publicacion Atomica vN</text>
+
+  <rect x="75" y="325" width="10" height="295" class="activation-bar" />
+  <line x1="85" y1="335" x2="245" y2="335" class="msg-call" />
+  <text x="100" y="330" class="msg-label">3: POST /v1/rule-sets/publish { changeDescription: "..." }</text>
+
+  <rect x="245" y="335" width="10" height="275" class="activation-bar" />
+  <line x1="255" y1="345" x2="445" y2="345" class="msg-call" />
+  <text x="260" y="340" class="msg-label">4: publishNewVersion(merchantId, desc)</text>
+
+  <rect x="445" y="345" width="10" height="255" class="activation-bar" />
+  <line x1="455" y1="365" x2="875" y2="365" class="msg-call" />
+  <text x="470" y="360" class="msg-label">5: UPDATE rule_set_versions SET status='ARCHIVED' WHERE status='ACTIVE'</text>
+  <line x1="875" y1="380" x2="455" y2="380" class="msg-return" />
+  <text x="470" y="375" class="return-label">prevVersion marcada ARCHIVED</text>
+
+  <line x1="455" y1="400" x2="875" y2="400" class="msg-call" />
+  <text x="470" y="395" class="msg-label">6: INSERT INTO rule_set_versions (vN, rules_snapshot_json, ACTIVE)</text>
+  <line x1="875" y1="415" x2="455" y2="415" class="msg-return" />
+  <text x="470" y="410" class="return-label">vN persistida inmutable</text>
+
+  <!-- Hot Cache Swap Call -->
+  <line x1="455" y1="440" x2="675" y2="440" class="msg-call" />
+  <text x="465" y="435" class="msg-label">7: reloadCache(merchantId, vN, rulesSnapshotJson)</text>
+
+  <rect x="675" y="440" width="10" height="120" class="activation-bar" />
+  <path d="M 685 455 C 725 455, 725 480, 687 480" class="msg-self" />
+  <text x="692" y="468" class="msg-label">8: parseSnapshot(json)</text>
+  <text x="692" y="478" class="tech-note">&lt;instancia nueva ActiveRuleSet&gt;</text>
+
+  <path d="M 685 498 C 730 498, 730 523, 687 523" class="msg-self" />
+  <text x="692" y="510" class="msg-label">9: atomicReference.set(newActiveRuleSet)</text>
+  <text x="692" y="521" class="tech-note">&lt;swap instantaneo en memoria O(1)&gt;</text>
+
+  <line x1="675" y1="545" x2="455" y2="545" class="msg-return" />
+  <text x="480" y="540" class="return-label">Cache recargada con exito</text>
+
+  <line x1="445" y1="575" x2="255" y2="575" class="msg-return" />
+  <text x="265" y="570" class="return-label">PublishResponse (version: "vN", status: "ACTIVE")</text>
+
+  <line x1="245" y1="600" x2="85" y2="600" class="msg-return" />
+  <text x="100" y="595" class="return-label">201 Created + Actualizacion React UI</text>
+
+  <!-- SECTION 3: Concurrent Evaluations (Zero-Downtime, No Partial Set) -->
+  <rect x="580" y="665" width="670" height="240" class="fragment-box" />
+  <polygon points="580,665 770,665 778,677 580,677" class="fragment-header" />
+  <text x="585" y="674" class="fragment-label">par: Evaluaciones Concurrentes (Hot Path)</text>
+
+  <rect x="1195" y="690" width="10" height="195" class="activation-bar" />
+  <line x1="1195" y1="700" x2="1085" y2="700" class="msg-call" />
+  <text x="1100" y="695" class="msg-label">10: POST /v1/evaluations</text>
+
+  <rect x="1075" y="700" width="10" height="175" class="activation-bar" />
+  <line x1="1075" y1="715" x2="685" y2="715" class="msg-call" />
+  <text x="705" y="710" class="msg-label">11: getActiveRuleSet(merchantId)</text>
+
+  <line x1="685" y1="735" x2="1075" y2="735" class="msg-return" />
+  <text x="705" y="730" class="return-label">ActiveRuleSet snapshot integro (vN o vN-1, jamas parcial)</text>
+
+  <path d="M 1085 750 C 1125 750, 1125 775, 1087 775" class="msg-self" />
+  <text x="1092" y="763" class="msg-label">12: evaluateRules()</text>
+
+  <line x1="1075" y1="795" x2="885" y2="795" class="msg-call" />
+  <text x="900" y="790" class="msg-label">13: asyncPersist(decision, ruleSetVersion="vN")</text>
+
+  <line x1="885" y1="810" x2="1075" y2="810" class="msg-return" />
+  <text x="910" y="805" class="return-label">Audit guardado en PostgreSQL</text>
+
+  <line x1="1075" y1="845" x2="1195" y2="845" class="msg-return" />
+  <text x="1100" y="840" class="return-label">200 OK { decision, ruleSetVersion: "vN" }</text>
+
+  <!-- SECTION 4: Rollback Zero-Downtime -->
+  <rect x="40" y="920" width="870" height="200" class="fragment-box" />
+  <polygon points="40,920 180,920 188,932 40,932" class="fragment-header" />
+  <text x="45" y="929" class="fragment-label">alt: Rollback a Version Previa</text>
+
+  <rect x="75" y="940" width="10" height="160" class="activation-bar" />
+  <line x1="85" y1="950" x2="245" y2="950" class="msg-call" />
+  <text x="100" y="945" class="msg-label">14: POST /v1/rule-sets/rollback { targetVersion: "v1" }</text>
+
+  <rect x="245" y="950" width="10" height="140" class="activation-bar" />
+  <line x1="255" y1="960" x2="445" y2="960" class="msg-call" />
+  <text x="260" y="955" class="msg-label">15: rollbackToVersion(merchantId, "v1")</text>
+
+  <rect x="445" y="960" width="10" height="120" class="activation-bar" />
+  <line x1="455" y1="975" x2="875" y2="975" class="msg-call" />
+  <text x="470" y="970" class="msg-label">16: UPDATE status='ARCHIVED' para vN; UPDATE status='ACTIVE' para v1</text>
+  <line x1="875" y1="990" x2="455" y2="990" class="msg-return" />
+  <text x="470" y="985" class="return-label">v1 reactivada en BD</text>
+
+  <line x1="455" y1="1010" x2="675" y2="1010" class="msg-call" />
+  <text x="470" y="1005" class="msg-label">17: reloadCache(merchantId, "v1", rulesSnapshotJson)</text>
+
+  <rect x="675" y="1010" width="10" height="35" class="activation-bar" />
+  <path d="M 685 1018 C 725 1018, 725 1038, 687 1038" class="msg-self" />
+  <text x="692" y="1030" class="tech-note">&lt;atomic swap a snapshot de v1&gt;</text>
+
+  <line x1="675" y1="1040" x2="455" y2="1040" class="msg-return" />
+  <text x="480" y="1035" class="return-label">Cache restaurada a v1</text>
+
+  <line x1="445" y1="1065" x2="255" y2="1065" class="msg-return" />
+  <text x="265" y="1060" class="return-label">RollbackResponse (version: "v1", status: "ACTIVE")</text>
+
+  <line x1="245" y1="1085" x2="85" y2="1085" class="msg-return" />
+  <text x="100" y="1080" class="return-label">200 OK (Rollback aplicado inmediatamente)</text>
+
+</svg>

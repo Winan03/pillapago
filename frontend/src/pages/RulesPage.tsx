@@ -1,6 +1,14 @@
 import React, { useEffect, useState } from 'react'
-import { rulesApi, Rule, FieldMetadata, CreateRulePayload } from '../api/rules'
+import {
+  rulesApi,
+  Rule,
+  FieldMetadata,
+  CreateRulePayload,
+  DraftDiffResponse,
+  RuleSetVersionSummary,
+} from '../api/rules'
 import { RuleModal } from '../components/rules/RuleModal'
+import { PublishVersionModal } from '../components/rules/PublishVersionModal'
 import { useAuth } from '../hooks/useAuth'
 
 export default function RulesPage() {
@@ -10,19 +18,32 @@ export default function RulesPage() {
   const [filterStatus, setFilterStatus] = useState<string>('ALL')
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+
+  // Modales
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false)
   const [ruleToEdit, setRuleToEdit] = useState<Rule | null>(null)
+
+  // Versionado y Rollback (HU-08)
+  const [isPublishModalOpen, setIsPublishModalOpen] = useState<boolean>(false)
+  const [draftDiff, setDraftDiff] = useState<DraftDiffResponse | null>(null)
+  const [diffLoading, setDiffLoading] = useState<boolean>(false)
+  const [versionsHistory, setVersionsHistory] = useState<RuleSetVersionSummary[]>([])
+  const [showHistory, setShowHistory] = useState<boolean>(false)
+  const [rollbackLoading, setRollbackLoading] = useState<boolean>(false)
 
   const loadData = async () => {
     setLoading(true)
     setError(null)
     try {
-      const [rulesData, catalogData] = await Promise.all([
+      const [rulesData, catalogData, historyData] = await Promise.all([
         rulesApi.getRules(filterStatus === 'ALL' ? undefined : filterStatus),
         rulesApi.getCatalog(),
+        rulesApi.getHistory().catch(() => []),
       ])
       setRules(rulesData)
       setCatalog(catalogData)
+      setVersionsHistory(historyData)
     } catch (err: any) {
       setError(err?.response?.data?.detail || err?.message || 'Error al cargar las reglas')
     } finally {
@@ -53,44 +74,139 @@ export default function RulesPage() {
     await loadData()
   }
 
+  const handleOpenPublishModal = async () => {
+    setDiffLoading(true)
+    setError(null)
+    try {
+      const diff = await rulesApi.getDraftDiff()
+      setDraftDiff(diff)
+      setIsPublishModalOpen(true)
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || err?.message || 'Error al calcular diferencias para publicación')
+    } finally {
+      setDiffLoading(false)
+    }
+  }
+
+  const handleConfirmPublish = async (description: string) => {
+    try {
+      const published = await rulesApi.publishVersion(description)
+      setSuccessMessage(`Versión ${published.versionName} publicada exitosamente con ${published.rulesCount} reglas activas.`)
+      await loadData()
+      setTimeout(() => setSuccessMessage(null), 5000)
+    } catch (err: any) {
+      throw err
+    }
+  }
+
+  const handleRollback = async (targetVersion: string) => {
+    if (!window.confirm(`¿Estás seguro de reactivar la versión ${targetVersion}? El motor de evaluación cambiará inmediatamente a este snapshot histórico.`)) {
+      return
+    }
+    setRollbackLoading(true)
+    setError(null)
+    try {
+      const restored = await rulesApi.rollbackVersion(targetVersion)
+      setSuccessMessage(`Rollback exitoso: Versión ${restored.versionName} ha sido reactivada.`)
+      await loadData()
+      setTimeout(() => setSuccessMessage(null), 5000)
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || err?.message || 'Error al ejecutar rollback')
+    } finally {
+      setRollbackLoading(false)
+    }
+  }
+
   const draftCount = rules.filter((r) => r.status === 'DRAFT').length
   const activeCount = rules.filter((r) => r.active).length
+  const activeVersion = versionsHistory.find((v) => v.status === 'ACTIVE')
 
   return (
     <main style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', fontFamily: 'inherit' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '1.8rem', color: '#0f172a' }}>
             Reglas de Riesgo Antifraude
           </h1>
           <p style={{ margin: 0, color: '#64748b', fontSize: '0.95rem' }}>
-            HU-07 · Crea y edita reglas con lenguaje acotado. Las nuevas reglas se guardan en <strong>Borrador (DRAFT)</strong> y no afectan decisiones en vivo hasta su publicación formal (HU-08).
+            Crea, edita y versiona reglas de decisión. La publicación genera un conjunto inmutable con recarga atómica en memoria y soporte de rollback sin downtime.
           </p>
         </div>
-        <button
-          onClick={handleOpenCreateModal}
-          style={{
-            backgroundColor: '#2563eb',
-            color: '#ffffff',
-            border: 'none',
-            borderRadius: '8px',
-            padding: '0.75rem 1.4rem',
-            fontSize: '0.95rem',
-            fontWeight: 600,
-            cursor: 'pointer',
-            boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2)',
-          }}
-        >
-          + Nueva Regla
-        </button>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button
+            onClick={() => setShowHistory(!showHistory)}
+            style={{
+              backgroundColor: '#ffffff',
+              color: '#334155',
+              border: '1px solid #cbd5e1',
+              borderRadius: '8px',
+              padding: '0.75rem 1.25rem',
+              fontSize: '0.95rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            {showHistory ? 'Ocultar Historial' : 'Historial de Versiones'}
+          </button>
+
+          <button
+            onClick={handleOpenPublishModal}
+            disabled={diffLoading || draftCount === 0 && !activeVersion}
+            style={{
+              backgroundColor: '#0f172a',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '0.75rem 1.4rem',
+              fontSize: '0.95rem',
+              fontWeight: 600,
+              cursor: diffLoading ? 'not-allowed' : 'pointer',
+              opacity: diffLoading ? 0.7 : 1,
+            }}
+          >
+            {diffLoading ? 'Calculando...' : 'Publicar Versión'}
+          </button>
+
+          <button
+            onClick={handleOpenCreateModal}
+            style={{
+              backgroundColor: '#2563eb',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '0.75rem 1.4rem',
+              fontSize: '0.95rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2)',
+            }}
+          >
+            + Nueva Regla
+          </button>
+        </div>
       </div>
+
+      {/* Alertas */}
+      {successMessage && (
+        <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', fontWeight: 500 }}>
+          {successMessage}
+        </div>
+      )}
+
+      {error && (
+        <div style={{ backgroundColor: '#fee2e2', border: '1px solid #f87171', color: '#991b1b', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
+          {error}
+        </div>
+      )}
 
       {/* KPI Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
         <div style={kpiCardStyle}>
-          <div style={{ color: '#64748b', fontSize: '0.85rem' }}>Total de Reglas</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0f172a', marginTop: '0.25rem' }}>{rules.length}</div>
+          <div style={{ color: '#64748b', fontSize: '0.85rem' }}>Versión Activa en Memoria</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#2563eb', marginTop: '0.25rem' }}>
+            {activeVersion ? activeVersion.versionName : 'Sin publicar (v0)'}
+          </div>
         </div>
         <div style={kpiCardStyle}>
           <div style={{ color: '#64748b', fontSize: '0.85rem' }}>Borradores Pendientes</div>
@@ -102,11 +218,80 @@ export default function RulesPage() {
         </div>
         <div style={kpiCardStyle}>
           <div style={{ color: '#64748b', fontSize: '0.85rem' }}>Rol Autenticado</div>
-          <div style={{ fontSize: '1.1rem', fontWeight: 600, color: '#2563eb', marginTop: '0.4rem' }}>
+          <div style={{ fontSize: '1.1rem', fontWeight: 600, color: '#0f172a', marginTop: '0.4rem' }}>
             {user?.role || 'RISK_ANALYST'}
           </div>
         </div>
       </div>
+
+      {/* Panel de Historial de Versiones */}
+      {showHistory && (
+        <div style={{ backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '1.5rem', marginBottom: '1.5rem' }}>
+          <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#0f172a' }}>
+            Historial de Versiones Publicadas (Rollback Controlado)
+          </h3>
+          {versionsHistory.length === 0 ? (
+            <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>Aún no se han publicado versiones para este comercio.</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {versionsHistory.map((ver) => (
+                <div
+                  key={ver.id}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '0.75rem 1rem',
+                    backgroundColor: ver.status === 'ACTIVE' ? '#eff6ff' : '#f8fafc',
+                    border: ver.status === 'ACTIVE' ? '1px solid #bfdbfe' : '1px solid #e2e8f0',
+                    borderRadius: '6px',
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <strong style={{ color: '#0f172a', fontSize: '1rem' }}>{ver.versionName}</strong>
+                      <span
+                        style={{
+                          fontSize: '0.75rem',
+                          padding: '0.15rem 0.5rem',
+                          borderRadius: '4px',
+                          fontWeight: 600,
+                          backgroundColor: ver.status === 'ACTIVE' ? '#dbeafe' : '#e2e8f0',
+                          color: ver.status === 'ACTIVE' ? '#1e40af' : '#64748b',
+                        }}
+                      >
+                        {ver.status === 'ACTIVE' ? 'ACTIVA EN VIVO' : 'ARCHIVADA'}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.25rem' }}>
+                      {ver.description} &bull; {ver.rulesCount} reglas &bull; Creado por: {ver.createdByUsername} &bull; {new Date(ver.createdAt).toLocaleString()}
+                    </div>
+                  </div>
+
+                  {ver.status === 'ARCHIVED' && (
+                    <button
+                      onClick={() => handleRollback(ver.versionName)}
+                      disabled={rollbackLoading}
+                      style={{
+                        padding: '0.4rem 0.8rem',
+                        backgroundColor: '#ffffff',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '6px',
+                        fontSize: '0.8rem',
+                        fontWeight: 600,
+                        color: '#0f172a',
+                        cursor: rollbackLoading ? 'not-allowed' : 'pointer',
+                      }}
+                    >
+                      Revertir a esta versión
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Filtros */}
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem' }}>
@@ -130,12 +315,6 @@ export default function RulesPage() {
       </div>
 
       {/* Contenido / Tabla */}
-      {error && (
-        <div style={{ backgroundColor: '#fee2e2', border: '1px solid #f87171', color: '#991b1b', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-          ⚠️ {error}
-        </div>
-      )}
-
       {loading ? (
         <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>Cargando catálogo y reglas...</div>
       ) : rules.length === 0 ? (
@@ -218,7 +397,7 @@ export default function RulesPage() {
                   </td>
                   <td style={{ padding: '1rem' }}>
                     <span style={{ color: rule.active ? '#16a34a' : '#94a3b8', fontWeight: 600 }}>
-                      {rule.active ? '● Sí' : '○ No'}
+                      {rule.active ? 'Habilitada' : 'Deshabilitada'}
                     </span>
                   </td>
                   <td style={{ padding: '1rem', textAlign: 'right' }}>
@@ -249,13 +428,22 @@ export default function RulesPage() {
         </div>
       )}
 
-      {/* Modal Guiado */}
+      {/* Modal de Edición de Regla */}
       <RuleModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveRule}
         catalog={catalog}
         ruleToEdit={ruleToEdit}
+      />
+
+      {/* Modal de Publicación de Versión (HU-08) */}
+      <PublishVersionModal
+        isOpen={isPublishModalOpen}
+        onClose={() => setIsPublishModalOpen(false)}
+        onConfirm={handleConfirmPublish}
+        diff={draftDiff}
+        loading={diffLoading}
       />
     </main>
   )

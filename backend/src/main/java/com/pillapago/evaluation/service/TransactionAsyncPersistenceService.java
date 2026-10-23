@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Servicio de persistencia asíncrona fuera del Hot Path utilizando Hilos Virtuales de Java 21 (HU-06c).
+ * Servicio de persistencia asíncrona fuera del Hot Path utilizando Hilos Virtuales de Java 21 (HU-06c, HU-08).
  * Garantiza que la respuesta HTTP al comercio no espere la escritura en PostgreSQL ni el cifrado Tink.
  */
 @Service
@@ -87,6 +87,7 @@ public class TransactionAsyncPersistenceService {
                     .currency(req.getCurrency())
                     .decision(res.getDecision())
                     .riskScore(res.getRiskScore())
+                    .ruleSetVersion(res.getRuleSetVersion())
                     .degraded(res.isDegraded())
                     .latencyMs(res.getLatencyMs())
                     .customerIdEncrypted(customerIdEnc)
