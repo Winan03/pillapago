@@ -16,22 +16,22 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Manejador global de excepciones bajo el estándar RFC 7807 (Problem Details).
+ * Manejador global de excepciones bajo el estÃ¡ndar RFC 7807 (Problem Details).
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler({InvalidCredentialsException.class, BadCredentialsException.class})
     public ResponseEntity<Map<String, Object>> handleInvalidCredentials(Exception ex, HttpServletRequest request) {
-        String userMsg = (ex.getMessage() != null && !ex.getMessage().isBlank() && !ex.getMessage().equals("Credenciales inválidas"))
+        String userMsg = (ex.getMessage() != null && !ex.getMessage().isBlank() && !ex.getMessage().equals("Credenciales invÃ¡lidas"))
                 ? ex.getMessage()
-                : "El correo electrónico o la contraseña ingresados no coinciden. Por favor verifica tus datos e intenta nuevamente.";
+                : "El correo electrÃ³nico o la contraseÃ±a ingresados no coinciden. Por favor verifica tus datos e intenta nuevamente.";
 
         Map<String, Object> problem = Map.of(
                 "type", "https://pillapago.dev/errors/unauthorized",
                 "title", "No autorizado",
                 "status", HttpStatus.UNAUTHORIZED.value(),
-                "detail", "Credenciales inválidas",
+                "detail", "Credenciales invÃ¡lidas",
                 "userMessage", userMsg,
                 "instance", request.getRequestURI()
         );
@@ -82,8 +82,8 @@ public class GlobalExceptionHandler {
                 "type", "https://pillapago.dev/errors/forbidden",
                 "title", "Acceso prohibido",
                 "status", HttpStatus.FORBIDDEN.value(),
-                "detail", "No cuenta con los permisos necesarios para realizar esta acción",
-                "userMessage", "No tienes permisos de Administrador para realizar esta acción en tu comercio.",
+                "detail", "No cuenta con los permisos necesarios para realizar esta acciÃ³n",
+                "userMessage", "No tienes permisos de Administrador para realizar esta acciÃ³n en tu comercio.",
                 "instance", request.getRequestURI()
         );
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
@@ -100,9 +100,9 @@ public class GlobalExceptionHandler {
 
         Map<String, Object> problem = Map.of(
                 "type", "https://pillapago.dev/errors/validation",
-                "title", "Datos inválidos",
+                "title", "Datos invÃ¡lidos",
                 "status", HttpStatus.BAD_REQUEST.value(),
-                "detail", "La solicitud contiene campos inválidos",
+                "detail", "La solicitud contiene campos invÃ¡lidos",
                 "userMessage", "Revisa los datos del formulario antes de continuar.",
                 "instance", request.getRequestURI(),
                 "invalidParams", errors
@@ -119,7 +119,7 @@ public class GlobalExceptionHandler {
                 "title", "Conflicto de Registro",
                 "status", HttpStatus.CONFLICT.value(),
                 "detail", ex.getMessage(),
-                "userMessage", "Este correo electrónico ya está registrado. Si ya tienes un comercio, inicia sesión o recupera el acceso.",
+                "userMessage", "Este correo electrÃ³nico ya estÃ¡ registrado. Si ya tienes un comercio, inicia sesiÃ³n o recupera el acceso.",
                 "instance", request.getRequestURI()
         );
         return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -146,7 +146,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleInvalidVerificationCode(InvalidVerificationCodeException ex, HttpServletRequest request) {
         Map<String, Object> problem = Map.of(
                 "type", "https://pillapago.dev/errors/invalid-verification-code",
-                "title", "Código de Verificación Inválido",
+                "title", "CÃ³digo de VerificaciÃ³n InvÃ¡lido",
                 "status", HttpStatus.BAD_REQUEST.value(),
                 "detail", ex.getMessage(),
                 "userMessage", ex.getMessage(),
@@ -161,10 +161,10 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handlePasswordMismatch(PasswordMismatchException ex, HttpServletRequest request) {
         Map<String, Object> problem = Map.of(
                 "type", "https://pillapago.dev/errors/validation",
-                "title", "Datos inválidos",
+                "title", "Datos invÃ¡lidos",
                 "status", HttpStatus.BAD_REQUEST.value(),
                 "detail", ex.getMessage(),
-                "userMessage", "La contraseña y la confirmación no coinciden. Asegúrate de escribir exactamente la misma contraseña en ambos campos.",
+                "userMessage", "La contraseÃ±a y la confirmaciÃ³n no coinciden. AsegÃºrate de escribir exactamente la misma contraseÃ±a en ambos campos.",
                 "instance", request.getRequestURI(),
                 "invalidParams", Map.of("confirmPassword", ex.getMessage())
         );
@@ -192,7 +192,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleInvalidRuleCondition(com.pillapago.rules.exception.InvalidRuleConditionException ex, HttpServletRequest request) {
         Map<String, Object> problem = Map.of(
                 "type", "https://pillapago.dev/errors/invalid-rule-condition",
-                "title", "Condición de regla inválida",
+                "title", "CondiciÃ³n de regla invÃ¡lida",
                 "status", HttpStatus.BAD_REQUEST.value(),
                 "detail", ex.getMessage(),
                 "userMessage", ex.getMessage(),
@@ -214,6 +214,39 @@ public class GlobalExceptionHandler {
                 "instance", request.getRequestURI()
         );
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem);
+    }
+    @ExceptionHandler({
+            org.springframework.dao.OptimisticLockingFailureException.class,
+            org.hibernate.StaleObjectStateException.class,
+            jakarta.persistence.OptimisticLockException.class
+    })
+    public ResponseEntity<Map<String, Object>> handleOptimisticLockingConflict(Exception ex, HttpServletRequest request) {
+        Map<String, Object> problem = Map.of(
+                "type", "https://pillapago.dev/errors/conflict",
+                "title", "Conflicto de Concurrencia Optimista",
+                "status", HttpStatus.CONFLICT.value(),
+                "detail", "El registro fue modificado simultáneamente por otra transacción o usuario.",
+                "userMessage", "El caso fue tomado o resuelto concurrentemente por otro analista. Por favor refresca la cola.",
+                "instance", request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem);
+    }
+
+    @ExceptionHandler(com.pillapago.evaluation.exception.CaseAlreadyResolvedException.class)
+    public ResponseEntity<Map<String, Object>> handleCaseAlreadyResolved(com.pillapago.evaluation.exception.CaseAlreadyResolvedException ex, HttpServletRequest request) {
+        Map<String, Object> problem = Map.of(
+                "type", "https://pillapago.dev/errors/case-already-resolved",
+                "title", "Caso Previamente Resuelto",
+                "status", HttpStatus.CONFLICT.value(),
+                "detail", ex.getMessage(),
+                "userMessage", "Este caso ya ha sido resuelto y es inmutable. No se admiten modificaciones posteriores.",
+                "instance", request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT)
                 .contentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .body(problem);
     }

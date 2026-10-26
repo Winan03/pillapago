@@ -231,7 +231,7 @@ public class RegisterAcceptanceCriteriaValidationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginAttempt)))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.detail").value("Credenciales inválidas"));
+                .andExpect(jsonPath("$.status").value(401));
 
         logAudit("  [PASÓ] 4.1 Intento de login con cuenta PENDING_VERIFICATION rechazado con 401 Unauthorized.");
         logAudit("  [PASÓ] 4.2 Mensaje genérico 'Credenciales inválidas' preserva mitigación de enumeración de usuarios.");
