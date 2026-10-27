@@ -2,6 +2,7 @@ package com.pillapago.evaluation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pillapago.evaluation.domain.CaseEntity;
+import com.pillapago.evaluation.domain.CaseStatus;
 import com.pillapago.evaluation.domain.TransactionEntity;
 import com.pillapago.evaluation.dto.EvaluateTransactionRequest;
 import com.pillapago.evaluation.dto.EvaluateTransactionResponse;
@@ -440,7 +441,7 @@ public class TransactionEvaluationE2ETest {
             // Caso HU-09 creado automáticamente para analistas
             Optional<CaseEntity> reviewCase = caseRepository.findByTransactionId(tx.getId());
             assertThat(reviewCase).isPresent();
-            assertThat(reviewCase.get().getStatus()).isEqualTo("PENDING_REVIEW");
+            assertThat(reviewCase.get().getStatus()).isEqualTo(CaseStatus.PENDING_REVIEW);
             assertThat(reviewCase.get().getPriority()).isEqualTo("HIGH");
         });
 

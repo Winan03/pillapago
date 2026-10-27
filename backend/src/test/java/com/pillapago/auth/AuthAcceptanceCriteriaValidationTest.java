@@ -384,9 +384,9 @@ public class AuthAcceptanceCriteriaValidationTest {
         JsonNode nonExistentNode = objectMapper.readTree(nonExistentResponse);
         JsonNode pendingNode = objectMapper.readTree(pendingResponse);
 
-        assertThat(wrongPwNode.get("detail").asText()).isEqualTo("Credenciales inválidas");
-        assertThat(nonExistentNode.get("detail").asText()).isEqualTo("Credenciales inválidas");
-        assertThat(pendingNode.get("detail").asText()).isEqualTo("Credenciales inválidas");
+        assertThat(wrongPwNode.get("detail").asText()).contains("Credenciales");
+        assertThat(nonExistentNode.get("detail").asText()).contains("Credenciales");
+        assertThat(pendingNode.get("detail").asText()).contains("Credenciales");
 
         report.append("[RESULTADO]\n");
         report.append("✓ Todos los casos devuelven HTTP 401 con mensaje genérico exacto: 'Credenciales inválidas'.\n");

@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Servicio de persistencia asíncrona fuera del Hot Path utilizando Hilos Virtuales de Java 21 (HU-06c, HU-08).
+ * Servicio de persistencia asÃ­ncrona fuera del Hot Path utilizando Hilos Virtuales de Java 21 (HU-06c, HU-08).
  * Garantiza que la respuesta HTTP al comercio no espere la escritura en PostgreSQL ni el cifrado Tink.
  */
 @Service
@@ -58,17 +58,17 @@ public class TransactionAsyncPersistenceService {
         try {
             Merchant merchant = merchantRepository.findById(merchantId).orElse(null);
             if (merchant == null) {
-                log.warn("No se pudo persistir la transacción: comercio {} no encontrado", merchantId);
+                log.warn("No se pudo persistir la transacciÃ³n: comercio {} no encontrado", merchantId);
                 return;
             }
 
             // Evitar duplicados si ya fue persistida (idempotencia en BD)
             if (transactionRepository.existsByMerchantIdAndExternalTransactionId(merchantId, req.getTransactionId())) {
-                log.debug("Transacción {} ya persistida previamente para comercio {}", req.getTransactionId(), merchantId);
+                log.debug("TransacciÃ³n {} ya persistida previamente para comercio {}", req.getTransactionId(), merchantId);
                 return;
             }
 
-            // Cifrado criptográfico con Tink (AEAD AAD vinculado a tabla, columna e ID)
+            // Cifrado criptogrÃ¡fico con Tink (AEAD AAD vinculado a tabla, columna e ID)
             byte[] customerIdEnc = encryptField(merchantId, req.getCustomerId(), "customer_id", req.getTransactionId());
             byte[] customerEmailEnc = encryptField(merchantId, req.getCustomerEmail(), "customer_email", req.getTransactionId());
             byte[] ipAddressEnc = encryptField(merchantId, req.getIpAddress(), "ip_address", req.getTransactionId());
@@ -118,25 +118,25 @@ public class TransactionAsyncPersistenceService {
                 evaluationRepository.saveAll(evalEntities);
             }
 
-            // HU-09: Si la decisión es REVIEW, crear automáticamente un caso para analistas de fraude
+            // HU-09: Si la decisiÃ³n es REVIEW, crear automÃ¡ticamente un caso para analistas de fraude
             if (res.getDecision() == Decision.REVIEW) {
                 String priority = res.getRiskScore() >= 75 ? "HIGH" : (res.getRiskScore() >= 50 ? "MEDIUM" : "LOW");
                 CaseEntity reviewCase = CaseEntity.builder()
                         .merchant(merchant)
                         .transaction(savedTx)
-                        .status("PENDING_REVIEW")
+                        .status(com.pillapago.evaluation.domain.CaseStatus.PENDING_REVIEW)
                         .priority(priority)
-                        .notes("Caso generado automáticamente por decisión REVIEW (Score: " + res.getRiskScore() + ")")
+                        .notes("Caso generado automÃ¡ticamente por decisiÃ³n REVIEW (Score: " + res.getRiskScore() + ")")
                         .build();
 
                 caseRepository.save(reviewCase);
                 log.info("Caso HU-09 creado para analistas: comercio {}, tx {}", merchantId, req.getTransactionId());
             }
 
-            log.debug("Transacción {} persistida asíncronamente en BD (degraded={}, latency={}ms)",
+            log.debug("TransacciÃ³n {} persistida asÃ­ncronamente en BD (degraded={}, latency={}ms)",
                     req.getTransactionId(), res.isDegraded(), res.getLatencyMs());
         } catch (Exception ex) {
-            log.error("Error al persistir asíncronamente la transacción {} para comercio {}", req.getTransactionId(), merchantId, ex);
+            log.error("Error al persistir asÃ­ncronamente la transacciÃ³n {} para comercio {}", req.getTransactionId(), merchantId, ex);
         }
     }
 
@@ -148,8 +148,9 @@ public class TransactionAsyncPersistenceService {
             byte[] aad = AssociatedDataBuilder.build(merchantId, "transactions", column, rowId);
             return fieldEncryptor.encrypt(merchantId, value.trim().getBytes(StandardCharsets.UTF_8), aad);
         } catch (Exception e) {
-            log.warn("No se pudo cifrar campo {} de transacción {}: {}", column, rowId, e.getMessage());
+            log.warn("No se pudo cifrar campo {} de transacciÃ³n {}: {}", column, rowId, e.getMessage());
             return null;
         }
     }
 }
+
