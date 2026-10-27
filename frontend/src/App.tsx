@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import CasesPage from './pages/CasesPage'
 import RulesPage from './pages/RulesPage'
+import ListsPage from './pages/ListsPage'
 import AuditPage from './pages/AuditPage'
 
 /**
@@ -41,6 +42,14 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={['RISK_ANALYST', 'MERCHANT_ADMIN']}>
                 <RulesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/lists"
+            element={
+              <ProtectedRoute allowedRoles={['RISK_ANALYST']}>
+                <ListsPage />
               </ProtectedRoute>
             }
           />

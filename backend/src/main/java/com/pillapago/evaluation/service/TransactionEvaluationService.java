@@ -1,5 +1,9 @@
 package com.pillapago.evaluation.service;
 
+import com.pillapago.lists.domain.ListEntryType;
+import com.pillapago.lists.domain.ListType;
+import com.pillapago.lists.service.ListCacheService;
+import com.pillapago.shared.crypto.HmacIndexService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pillapago.evaluation.dto.EvaluateTransactionRequest;
 import com.pillapago.evaluation.dto.EvaluateTransactionResponse;
@@ -47,7 +51,11 @@ public class TransactionEvaluationService {
     private final ObjectMapper objectMapper;
     private final Executor virtualThreadTaskExecutor;
     private final RuleEvaluator ruleEvaluator;
+    private final ListCacheService listCacheService;
+    private final HmacIndexService hmacIndexService;
 
+
+        @org.springframework.beans.factory.annotation.Autowired
     public TransactionEvaluationService(
             ApiKeyRateLimiterService rateLimiterService,
             RedisIdempotencyService idempotencyService,
@@ -56,7 +64,9 @@ public class TransactionEvaluationService {
             MerchantRepository merchantRepository,
             ApplicationEventPublisher eventPublisher,
             ObjectMapper objectMapper,
-            @Qualifier("virtualThreadTaskExecutor") Executor virtualThreadTaskExecutor
+            @Qualifier("virtualThreadTaskExecutor") Executor virtualThreadTaskExecutor,
+            @org.springframework.context.annotation.Lazy ListCacheService listCacheService,
+            @org.springframework.context.annotation.Lazy HmacIndexService hmacIndexService
     ) {
         this.rateLimiterService = rateLimiterService;
         this.idempotencyService = idempotencyService;
@@ -67,6 +77,22 @@ public class TransactionEvaluationService {
         this.objectMapper = objectMapper;
         this.virtualThreadTaskExecutor = virtualThreadTaskExecutor;
         this.ruleEvaluator = new DefaultRuleEvaluator();
+        this.listCacheService = listCacheService;
+        this.hmacIndexService = hmacIndexService;
+    }
+
+    public TransactionEvaluationService(
+            ApiKeyRateLimiterService rateLimiterService,
+            RedisIdempotencyService idempotencyService,
+            RedisVelocityService velocityService,
+            RuleEngineCacheService ruleEngineCacheService,
+            MerchantRepository merchantRepository,
+            ApplicationEventPublisher eventPublisher,
+            ObjectMapper objectMapper,
+            Executor virtualThreadTaskExecutor
+    ) {
+        this(rateLimiterService, idempotencyService, velocityService, ruleEngineCacheService,
+                merchantRepository, eventPublisher, objectMapper, virtualThreadTaskExecutor, null, null);
     }
 
     /**
@@ -86,6 +112,62 @@ public class TransactionEvaluationService {
                 ));
 
         String canonicalPayload = buildCanonicalPayload(request);
+        // 2.1 Verificación prioritaria de listas de bloqueo y confianza en memoria O(1) (HU-13 / RF-09)
+        ListCacheService.ListCheckResult listResult = checkInMemoryLists(merchantId, request);
+        if (listResult.matched()) {
+            long latencyMs = System.currentTimeMillis() - startTime;
+            if (listResult.listType() == ListType.BLOCK) {
+                // Criterio 3: Una coincidencia en BLOCK devuelve REJECT inmediato en la evaluación
+                log.warn("[HOT-PATH-REJECT] Tx {} rechazada de inmediato por BLOCKLIST [{}] motivo: {}",
+                        request.getTransactionId(), listResult.entryType(), listResult.reason());
+                EvaluateTransactionResponse rejectResponse = EvaluateTransactionResponse.builder()
+                        .transactionId(request.getTransactionId())
+                        .decision(Decision.REJECT)
+                        .riskScore(100)
+                        .reasons(List.of(RuleReasonDto.builder()
+                                .ruleName("BLOCKLIST_" + listResult.entryType().name())
+                                .points(100)
+                                .description("Rechazo inmediato por lista de bloqueo (" + listResult.entryType() + "): " + listResult.reason())
+                                .build()))
+                        .ruleSetVersion("list-block")
+                        .degraded(false)
+                        .latencyMs(latencyMs)
+                        .build();
+
+                eventPublisher.publishEvent(TransactionEvaluatedEvent.builder()
+                        .merchantId(merchantId)
+                        .request(request)
+                        .response(rejectResponse)
+                        .timestamp(OffsetDateTime.now())
+                        .build());
+                return rejectResponse;
+            } else if (listResult.listType() == ListType.ALLOW) {
+                // Coincidencia en ALLOW: Whitelist Bypass emite APPROVE inmediato (Score 0)
+                log.info("[HOT-PATH-APPROVE] Tx {} aprobada de inmediato por ALLOWLIST [{}] motivo: {}",
+                        request.getTransactionId(), listResult.entryType(), listResult.reason());
+                EvaluateTransactionResponse approveResponse = EvaluateTransactionResponse.builder()
+                        .transactionId(request.getTransactionId())
+                        .decision(Decision.APPROVE)
+                        .riskScore(0)
+                        .reasons(List.of(RuleReasonDto.builder()
+                                .ruleName("ALLOWLIST_" + listResult.entryType().name())
+                                .points(0)
+                                .description("Aprobación inmediata por lista de confianza (" + listResult.entryType() + "): " + listResult.reason())
+                                .build()))
+                        .ruleSetVersion("list-allow")
+                        .degraded(false)
+                        .latencyMs(latencyMs)
+                        .build();
+
+                eventPublisher.publishEvent(TransactionEvaluatedEvent.builder()
+                        .merchantId(merchantId)
+                        .request(request)
+                        .response(approveResponse)
+                        .timestamp(OffsetDateTime.now())
+                        .build());
+                return approveResponse;
+            }
+        }
 
         // 3. Control de Idempotencia en Redis
         try {
@@ -346,4 +428,24 @@ public class TransactionEvaluationService {
             String ruleSetVersion,
             boolean degraded
     ) {}
+
+    private ListCacheService.ListCheckResult checkInMemoryLists(UUID merchantId, EvaluateTransactionRequest request) {
+        if (listCacheService == null || hmacIndexService == null) {
+            return ListCacheService.ListCheckResult.noMatch();
+        }
+        Map<ListEntryType, String> hashedIdentifiers = new EnumMap<>(ListEntryType.class);
+        if (request.getIpAddress() != null && !request.getIpAddress().isBlank()) {
+            hashedIdentifiers.put(ListEntryType.IP, hmacIndexService.computeBlindIndex(merchantId, request.getIpAddress().trim()));
+        }
+        if (request.getDeviceId() != null && !request.getDeviceId().isBlank()) {
+            hashedIdentifiers.put(ListEntryType.DEVICE, hmacIndexService.computeBlindIndex(merchantId, request.getDeviceId().trim()));
+        }
+        if (request.getCustomerEmail() != null && !request.getCustomerEmail().isBlank()) {
+            hashedIdentifiers.put(ListEntryType.EMAIL, hmacIndexService.computeBlindIndex(merchantId, request.getCustomerEmail().trim()));
+        }
+        if (request.getCardFingerprint() != null && !request.getCardFingerprint().isBlank()) {
+            hashedIdentifiers.put(ListEntryType.CARD_FINGERPRINT, hmacIndexService.computeBlindIndex(merchantId, request.getCardFingerprint().trim()));
+        }
+        return listCacheService.evaluateTransaction(merchantId, hashedIdentifiers);
+    }
 }
