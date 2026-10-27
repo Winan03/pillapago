@@ -250,4 +250,19 @@ public class GlobalExceptionHandler {
                 .contentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .body(problem);
     }
+
+    @ExceptionHandler(com.pillapago.lists.exception.ListEntryAlreadyExistsException.class)
+    public ResponseEntity<Map<String, Object>> handleListEntryAlreadyExists(com.pillapago.lists.exception.ListEntryAlreadyExistsException ex, HttpServletRequest request) {
+        Map<String, Object> problem = Map.of(
+                "type", "https://pillapago.dev/errors/list-entry-conflict",
+                "title", "Elemento Ya Registrado en Lista",
+                "status", HttpStatus.CONFLICT.value(),
+                "detail", ex.getMessage(),
+                "userMessage", "El identificador ya se encuentra registrado en dicha lista para tu comercio.",
+                "instance", request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem);
+    }
 }
